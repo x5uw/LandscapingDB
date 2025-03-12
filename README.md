@@ -48,7 +48,3 @@ Contains the database connection settings (host, dbname, user, password).
 - clientmanagement.py, propertymanagement.py, servicemanagement.py, workrecordmanagement.py, employeemanagement.py, financialmanagement.py:
 Each file contains one or more API classes for its domain.
 - driver.py: The main CLI driver that connects to the database, loads APIs, and interacts with the user.
-
-
-https://cdn-0.plantuml.com/plantuml/png/PPAzRi8m4CVtFCM9oP4A0sE6Yb8OAZ50KUV8YG_goh5T-qoRjozsC0KoHRhxV_nyoi8JTnGwLV2MZ8CFZwwmvv5ifUMQOB9oyeGEc4ZVcUtB2N0FSVmeVTc-UM3SId-LnT58jDR26gafAnuAEV66UmHcVTyQUvnV6fT54V5W-dnfh-0zQBY25Mawx9SLj4PhRAacKuk6bSLg2TCRw-kmbaQ3QRwmfHjxfAxWY5HpfUhu81RJoY8kxb8sqXEOGtHSOlnDJiIjO2MzLRnFcWvr6BrYZ-fiJ7k6i-Fi2OnDOFFo7ge2CMJL0ebBvTb8WB_O1aAMMFyPjivqbk1W74Xj0-KYwun5Hpteq3NeoiIMmwBh90KEbXmORxiUMc2_sy1tGDVdwoRRBax0eG-AVBODdFaQUJs-rlxJ_42mWXCAC85YymArYF_e7m00![image](https://github.com/user-attachments/assets/34e34690-65d7-45cf-817e-dcb952165f73)
-
