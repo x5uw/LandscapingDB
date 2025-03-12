@@ -7,10 +7,10 @@ from config import DB_CONFIG    # Import the database configuration dictionary
 
 
 # Function to connect to the PostgreSQL database
-# It uses the connection settings specified in DB_CONFIG
+# It uses the connection settings specified in config.py
 # Returns a connection object if successful, otherwise returns None
 def connect_to_db():
-    try: # Attempt to establish a connection to the database by unpacking the DB_CONFIG dictionary
+    try: # Attempt to establish a connection to the database
         dbConnection = psycopg2.connect(**DB_CONFIG)
         return dbConnection 
     except psycopg2.Error as e: # Print an error message if the connection attempt fails
