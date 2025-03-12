@@ -10,7 +10,7 @@ from config import DB_CONFIG    # Import the database configuration dictionary
 # It uses the connection settings specified in config.py
 # Returns a connection object if successful, otherwise returns None
 def connect_to_db():
-    try: # Attempt to establish a connection to the database
+    try: # Attempt to establish a connection to the database 
         dbConnection = psycopg2.connect(**DB_CONFIG)
         return dbConnection 
     except psycopg2.Error as e: # Print an error message if the connection attempt fails
@@ -30,7 +30,7 @@ def main():
     # Retrieve a list of API endpoint objects from the database
     apis = get_all_apis(dbConnection)
 
-    # Start an infinite loop to continuously prompt the user for input until they choose to exit
+    # Start an infinite loop to continuously prompt the user for input until they choose to exit.
     while True:
         print("\n=== Available APIs ===")
         
