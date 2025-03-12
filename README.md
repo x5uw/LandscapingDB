@@ -48,3 +48,6 @@ Contains the database connection settings (host, dbname, user, password).
 - clientmanagement.py, propertymanagement.py, servicemanagement.py, workrecordmanagement.py, employeemanagement.py, financialmanagement.py:
 Each file contains one or more API classes for its domain.
 - driver.py: The main CLI driver that connects to the database, loads APIs, and interacts with the user.
+
+(https://github.com/user-attachments/assets/7a796a4b-9c44-407c-b266-34ffb8a93dd0)
+
