@@ -7,7 +7,7 @@ LandscapeDB is a command‑line Python application that interacts with a Postgre
 The system works as follows:
 
 ## Database Connection: 
-A global configuration (in config.py) provides the connection settings to the PostgreSQL database. The helper function in database.py uses these settings to create a connection.
+A global configuration (in config.py) provides the connection settings to the PostgreSQL database. The helper function in driver.py uses these settings to create a connection.
 
 ## API Modules: 
 - Each API module (e.g., clientmanagement.py, propertymanagement.py, etc.) contains one or more classes that inherit from APIEndpoint. These classes implement:
