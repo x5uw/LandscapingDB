@@ -1,0 +1,705 @@
+-- Drop tables if they exist (optional clean-up). Uncomment if desired.
+-- DROP TABLE IF EXISTS RecurringServiceList CASCADE;
+-- DROP TABLE IF EXISTS Invoice CASCADE;
+-- DROP TABLE IF EXISTS WorkRecord CASCADE;
+-- DROP TABLE IF EXISTS RecurringService CASCADE;
+-- DROP TABLE IF EXISTS Property CASCADE;
+-- DROP TABLE IF EXISTS Client CASCADE;
+-- DROP TABLE IF EXISTS Employee CASCADE;
+-- DROP TABLE IF EXISTS FrequencyType CASCADE;
+-- DROP TABLE IF EXISTS PropertyType CASCADE;
+-- DROP TABLE IF EXISTS InvoiceStanding CASCADE;
+-- DROP TABLE IF EXISTS OrderStatus CASCADE;
+-- DROP TABLE IF EXISTS ServiceType CASCADE;
+-- DROP TABLE IF EXISTS State CASCADE;
+
+
+
+\c postgres
+drop database landscapedb;
+create database landscapedb;
+\c landscapedb
+
+
+
+\qecho Creating Table "State"
+-- 1) State
+CREATE TABLE IF NOT EXISTS State (
+	id	CHAR(2),
+    	name 	VARCHAR(20) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+
+\qecho Creating Table "ServiceType"
+-- 2) ServiceType
+CREATE TABLE IF NOT EXISTS ServiceType (
+    	id 		CHAR(2),
+    	name 	VARCHAR(15) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "OrderStatus"
+-- 3) OrderStatus
+CREATE TABLE IF NOT EXISTS OrderStatus (
+    	id 		CHAR(2),
+    	name 	VARCHAR(20) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "InvoiceStanding"
+-- 4) InvoiceStanding
+CREATE TABLE IF NOT EXISTS InvoiceStanding (
+    	id 		CHAR(2),
+    	name 	VARCHAR(10) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "FrequencyType"
+-- 5) FrequencyType
+CREATE TABLE IF NOT EXISTS FrequencyType (
+    	id 		CHAR(2),
+    	name 	VARCHAR(10) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "PropertyType"
+-- 6) PropertyType
+CREATE TABLE IF NOT EXISTS PropertyType (
+    	id CHAR(2),
+    	name VARCHAR(15) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "Employee"
+-- 7) Employee
+CREATE TABLE IF NOT EXISTS Employee (
+    	id 			SERIAL,
+    	employeeNum 		VARCHAR(10) 	UNIQUE NOT NULL,
+    	firstName 		VARCHAR(15) 	NOT NULL,
+    	lastName 		VARCHAR(15) 	NOT NULL,
+    	phone 			VARCHAR(15) 	NOT NULL,
+    	email 			VARCHAR(50) 	UNIQUE,
+    	hireDate 		DATE 		NOT NULL,
+    	deactivatedDate	DATE,
+    	hourlyWage 		MONEY 		NOT NULL,
+
+	PRIMARY KEY		(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "Client"
+-- 8) Client
+CREATE TABLE IF NOT EXISTS Client (
+    	id 			SERIAL,
+    	accountNumber	VARCHAR(10) 	UNIQUE NOT NULL,
+    	firstName 	VARCHAR(20) 	NOT NULL,
+    	lastName 	VARCHAR(20) 	NOT NULL,
+    	phoneNumber 	VARCHAR(10) 	NOT NULL,
+    	email 		VARCHAR(50) 	UNIQUE,
+    	activeStatus 	BOOLEAN 		DEFAULT TRUE,
+
+	PRIMARY KEY	(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "Property"
+-- 9) Property
+CREATE TABLE IF NOT EXISTS Property (
+    	id 				SERIAL, 		
+    	clientID 		INT 			NOT NULL,
+    	propertyTypeID 	CHAR(2) 		NOT NULL,
+    	propertyNumber 	VARCHAR(10) 	UNIQUE NOT NULL,
+    	streetAddress 	VARCHAR(50) 	NOT NULL,
+    	streetAddress2 	VARCHAR(50),
+    	city 			VARCHAR(20) 	NOT NULL,
+    	stateID 			CHAR(2) 		NOT NULL,
+    	zipcode 			VARCHAR(10)	NOT NULL,
+    	activeStatus 		BOOLEAN 		DEFAULT TRUE,
+
+	PRIMARY KEY		(id),
+	CONSTRAINT fk_client
+ 		FOREIGN KEY		(clientID) REFERENCES Client(id),
+    	CONSTRAINT fk_property_type
+    		FOREIGN KEY		(propertyTypeID) REFERENCES PropertyType(id),
+    	CONSTRAINT fk_state
+    		FOREIGN KEY		(stateID) REFERENCES State(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "RecurringService"
+-- 10) RecurringService
+CREATE TABLE IF NOT EXISTS RecurringService (
+    	id 				SERIAL,
+    	serviceNum 		VARCHAR(10) 	UNIQUE NOT NULL,
+    	name 			VARCHAR(50) 	NOT NULL,
+    	allocatedManHours	INTERVAL 	NOT NULL,
+    	price 			MONEY 		NOT NULL,
+    	serviceTypeID 	CHAR(2) 		NOT NULL,
+    	orderStatusID 	CHAR(2) 		NOT NULL,
+    
+	PRIMARY KEY		(id),
+	CONSTRAINT fk_service_type
+        	FOREIGN KEY	(serviceTypeID) REFERENCES ServiceType(id),
+    	CONSTRAINT fk_order_status
+        	FOREIGN KEY	(orderStatusID) REFERENCES OrderStatus(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "WorkRecord"
+-- 11) WorkRecord
+CREATE TABLE IF NOT EXISTS WorkRecord (
+    	id 					SERIAL,
+    	workRecordNum 		VARCHAR(10) 	UNIQUE NOT NULL,
+    	recurringServiceID 	INT 			NOT NULL,
+    	startTime 			TIMESTAMP,
+    	endTime 				TIMESTAMP,
+    	employeeID 			INT 			NOT NULL,
+
+	PRIMARY KEY			(id),
+    	CONSTRAINT fk_recurring_service
+     		FOREIGN KEY	(recurringServiceID) REFERENCES RecurringService(id),
+    	CONSTRAINT fk_employee
+     		FOREIGN KEY	(employeeID) REFERENCES Employee(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "Invoice"
+-- 12) Invoice
+CREATE TABLE IF NOT EXISTS Invoice (
+    	id 				SERIAL,
+    	clientID 		INT 			NOT NULL,
+    	invoiceNumber 	VARCHAR(10)	UNIQUE NOT NULL,
+    	totalAmount 		MONEY		NOT NULL,
+    	workRecordID 		INT			NOT NULL,
+    	periodStart 		DATE 		NOT NULL,
+    	periodEnd 		DATE 		NOT NULL,
+    	dueDate 			TIMESTAMP	NOT NULL,
+    	invoiceDate 		TIMESTAMP 	NOT NULL,
+    	invoiceStandingID	CHAR(2) 		NOT NULL,
+    
+	PRIMARY KEY		(id),
+	CONSTRAINT fk_client_invoice
+    		FOREIGN KEY	(clientID) REFERENCES Client(id),
+    	CONSTRAINT fk_work_record
+     		FOREIGN KEY(workRecordID) REFERENCES WorkRecord(id),
+    	CONSTRAINT fk_invoice_standing 
+		FOREIGN KEY	(invoiceStandingID) REFERENCES InvoiceStanding(id)
+);
+\qecho
+
+
+
+\qecho Creating Table "RecurringServiceList"
+-- 13) RecurringServiceList
+CREATE TABLE IF NOT EXISTS RecurringServiceList (
+    	propertyID 			INT 		NOT NULL,
+    	recurringServiceID 	INT 		NOT NULL,
+    	frequencyTypeID 		CHAR(2)	NOT NULL,
+    	activeStatus 			BOOLEAN 	DEFAULT TRUE,
+    	
+	PRIMARY KEY (propertyID, recurringServiceID),
+    	CONSTRAINT fk_property
+    		FOREIGN KEY	(propertyID) REFERENCES Property(id),
+    	CONSTRAINT fk_recurring_service_list
+     		FOREIGN KEY(recurringServiceID) REFERENCES RecurringService(id),
+    	CONSTRAINT fk_frequency_type
+     		FOREIGN KEY(frequencyTypeID) REFERENCES FrequencyType(id)
+);
+\qecho
+
+
+
+-- Done creating tables and constraints.
+
+
+
+
+-------------------------------
+-- Domain Tables Population  --
+-------------------------------
+
+-- Insert all U.S. states (50 states)
+INSERT INTO State VALUES
+('AL', 'Alabama'),
+('AK', 'Alaska'),
+('AZ', 'Arizona'),
+('AR', 'Arkansas'),
+('CA', 'California'),
+('CO', 'Colorado'),
+('CT', 'Connecticut'),
+('DE', 'Delaware'),
+('FL', 'Florida'),
+('GA', 'Georgia'),
+('HI', 'Hawaii'),
+('ID', 'Idaho'),
+('IL', 'Illinois'),
+('IN', 'Indiana'),
+('IA', 'Iowa'),
+('KS', 'Kansas'),
+('KY', 'Kentucky'),
+('LA', 'Louisiana'),
+('ME', 'Maine'),
+('MD', 'Maryland'),
+('MA', 'Massachusetts'),
+('MI', 'Michigan'),
+('MN', 'Minnesota'),
+('MS', 'Mississippi'),
+('MO', 'Missouri'),
+('MT', 'Montana'),
+('NE', 'Nebraska'),
+('NV', 'Nevada'),
+('NH', 'New Hampshire'),
+('NJ', 'New Jersey'),
+('NM', 'New Mexico'),
+('NY', 'New York'),
+('NC', 'North Carolina'),
+('ND', 'North Dakota'),
+('OH', 'Ohio'),
+('OK', 'Oklahoma'),
+('OR', 'Oregon'),
+('PA', 'Pennsylvania'),
+('RI', 'Rhode Island'),
+('SC', 'South Carolina'),
+('SD', 'South Dakota'),
+('TN', 'Tennessee'),
+('TX', 'Texas'),
+('UT', 'Utah'),
+('VT', 'Vermont'),
+('VA', 'Virginia'),
+('WA', 'Washington'),
+('WV', 'West Virginia'),
+('WI', 'Wisconsin'),
+('WY', 'Wyoming');
+
+
+
+
+-- Service Types
+INSERT INTO ServiceType VALUES
+('L','Lawncare'),
+('F','Flowerbed'),
+('T','Tree Trimming'),
+('S','Snow Removal'),
+('O','Other');
+
+
+
+
+-- Order Status
+INSERT INTO OrderStatus VALUES
+('A','Active'),
+('I','Inactive'),
+('P','Paused');
+
+
+
+
+-- Invoice Standing
+INSERT INTO InvoiceStanding VALUES
+('G','Good'),
+('P','Past Due');
+
+
+
+
+-- Frequency Types
+INSERT INTO FrequencyType VALUES
+('W','Weekly'),
+('B','Biweekly'),
+('M','Monthly'),
+('Q','Quarterly');
+
+
+
+
+-- Property Types
+INSERT INTO PropertyType VALUES
+('R','Residential'),
+('C','Commercial'),
+('I','Industrial');
+
+
+
+
+-------------------------------
+-- Business Tables Population --
+-------------------------------
+
+-- Employees
+-- 	10 employees 
+-- 	5 with email
+-- 	5 with no email
+-- 	wages between $25-$32/hr
+-- 	2 with deactivated dates)
+INSERT INTO Employee (id, employeeNum, firstName, lastName, phone, email, hireDate, deactivatedDate, hourlyWage) VALUES
+(1, 'E000000001', 'Alice', 'Anderson',	'555-0101', 'alice.anderson@example.com', '2020-01-01', NULL, 25.00),
+(2, 'E000000002', 'Bob', 'Brown', '555-0102', 'bob.brown@example.com', '2020-01-01', NULL, 26.00),
+(3, 'E000000003', 'Charlie', 'Clark', '555-0103', NULL, '2020-01-01', '2022-01-01', 27.00),
+(4, 'E000000004', 'Diana', 'Davis', '555-0104', 'diana.davis@example.com','2020-01-01', NULL, 28.00),
+(5, 'E000000005', 'Evan', 'Edwards', '555-0105', NULL, '2020-01-01', NULL, 29.00),
+(6, 'E000000006', 'Fiona', 'Foster', '555-0106', 'fiona.foster@example.com', '2020-01-01', NULL, 30.00),
+(7, 'E000000007', 'George', 'Green', '555-0107', NULL, '2020-01-01', '2022-01-01',	31.00),
+(8, 'E000000008', 'Hannah', 'Hill', '555-0108', 'hannah.hill@example.com', '2020-01-01', NULL, 32.00),
+(9, 'E000000009', 'Ian', 'Iverson', '555-0109', NULL, '2020-01-01', NULL, 28.50),
+(10, 'E000000010', 'Jane', 'Jones', '555-0110', 'jane.jones@example.com', '2020-01-01', NULL, 27.50);
+
+
+
+
+-- Clients (15 clients)
+--   	10 clients with 1 property each (clients 1-10)
+--   	3 clients with 2 properties each (clients 11-13)
+--   	1 client with 4 properties (client 14)
+--   	1 client with 10 properties (client 15)
+INSERT INTO Client (id, accountNumber, firstName, lastName, phoneNumber, email, activeStatus) VALUES
+(1, 'C0001', 'Client1', 'Lastname1', '555-1001', 'client1@example.com', TRUE),
+(2, 'C0002', 'Client2', 'Lastname2', '555-1002', 'client2@example.com', TRUE),
+(3, 'C0003', 'Client3', 'Lastname3', '555-1003', 'client3@example.com', TRUE),
+(4, 'C0004', 'Client4', 'Lastname4', '555-1004', 'client4@example.com', TRUE),
+(5, 'C0005', 'Client5', 'Lastname5', '555-1005', 'client5@example.com', TRUE),
+(6, 'C0006', 'Client6', 'Lastname6', '555-1006', 'client6@example.com', TRUE),
+(7, 'C0007', 'Client7', 'Lastname7', '555-1007', 'client7@example.com', TRUE),
+(8, 'C0008', 'Client8', 'Lastname8', '555-1008', 'client8@example.com', TRUE),
+(9, 'C0009', 'Client9', 'Lastname9', '555-1009', 'client9@example.com', TRUE),
+(10, 'C0010', 'Client10', 'Lastname10', '555-1010', 'client10@example.com', TRUE),
+(11, 'C0011', 'Client11', 'Lastname11', '555-1011', 'client11@example.com', TRUE),
+(12, 'C0012', 'Client12', 'Lastname12', '555-1012', 'client12@example.com', TRUE),
+(13, 'C0013', 'Client13', 'Lastname13', '555-1013', 'client13@example.com', TRUE),
+(14, 'C0014', 'Client14', 'Lastname14', '555-1014', 'client14@example.com', TRUE),
+(15, 'C0015', 'Client15', 'Lastname15', '555-1015', 'client15@example.com', TRUE);
+
+
+
+
+-- Properties (30 properties)
+-- 	Clients 1-10 get 1 property each 
+--	client 11 gets 2 
+--	client 12 gets 2 
+--	client 13 gets 2 
+--	client 14 gets 4 
+--	client 15 gets 5
+INSERT INTO Property (id, clientID, propertyTypeID, propertyNumber, streetAddress, streetAddress2, city, stateID, zipcode, activeStatus) VALUES
+(1, 1, 'R', 'P001', '100 Maple St', NULL, 'Everett', 'WA', '98203', TRUE),
+(2, 2, 'R', 'P002', '200 Oak St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(3, 3, 'C', 'P003', '300 Pine St', NULL, 'Mill Creek', 'WA', '98012', TRUE),
+(4, 4, 'R', 'P004', '400 Elm St', NULL, 'Bothell', 'WA', '98011', TRUE),
+(5, 5, 'I', 'P005', '500 Birch St', 'Apt 2', 'Seattle', 'WA', '98101', TRUE),
+(6, 6, 'R', 'P006', '600 Cedar St', NULL, 'Kirkland', 'WA', '98004', TRUE),
+(7, 7, 'C', 'P007', '700 Walnut St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(8, 8, 'R', 'P008', '800 Cherry St', NULL, 'Bothell', 'WA', '98011', TRUE),
+(9, 9, 'I', 'P009', '900 Ash St', NULL, 'Everett', 'WA', '98203', TRUE),
+(10, 10, 'R', 'P010', '1010 Poplar St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(11, 11, 'R', 'P011', '1111 Spruce St', NULL, 'Mill Creek', 'WA', '98012', TRUE),
+(12, 11, 'C', 'P012', '1212 Hickory St', NULL, 'Everett', 'WA', '98203', TRUE),
+(13, 12, 'R', 'P013', '1313 Willow St', NULL, 'Kirkland', 'WA', '98004', TRUE),
+(14, 12, 'R', 'P014', '1414 Magnolia St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(15, 13, 'C', 'P015', '1515 Redwood St', NULL, 'Bothell', 'WA', '98011', TRUE),
+(16, 13, 'I', 'P016', '1616 Cypress St', NULL, 'Kirkland', 'WA', '98004', TRUE),
+(17, 14, 'R', 'P017', '1717 Palm St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(18, 14, 'R', 'P018', '1818 Vine St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(19, 14, 'C', 'P019', '1919 Sunset Blvd', NULL, 'Kirkland', 'WA', '98004', TRUE),
+(20, 14, 'I', 'P020', '2020 Hollywood Blvd', NULL, 'Mill Creek', 'WA', '98012', TRUE),
+(21, 15, 'R', 'P021', '2121 Ocean Ave', NULL, 'Bothell', 'WA', '98011', TRUE),
+(22, 15, 'R', 'P022', '2222 Seaside Dr', NULL, 'Everett', 'WA', '98203', TRUE),
+(23, 15, 'C', 'P023', '2323 Harbor St', NULL, 'Seattle', 'WA', '98101', TRUE),
+(24, 15, 'I', 'P024', '2424 Bay St', NULL, 'Mill Creek', 'WA', '98012', TRUE),
+(25, 15, 'R', 'P025', '2525 Market St', NULL, 'Everett', 'WA', '98203', TRUE),
+(26, 15, 'R', 'P026', '2626 Sunset Rd', NULL, 'Everett', 'WA', '98203', TRUE),
+(27, 15, 'C', 'P027', '2727 La Jolla Blvd', NULL, 'Bothell', 'WA', '98011', TRUE),
+(28, 15, 'I', 'P028', '2828 Del Mar Rd', NULL, 'Mill Creek', 'WA', '98012', TRUE),
+(29, 15, 'R', 'P029', '2929 Gaslamp St', NULL, 'Everett', 'WA', '98203', TRUE),
+(30, 15, 'C', 'P030', '3030 Fifth Ave', NULL, 'Everett', 'WA', '98203', TRUE);
+
+-------------------------------
+-- Recurring Services & Lists --
+-------------------------------
+
+-- RecurringService
+INSERT INTO RecurringService (id, serviceNum, name, allocatedManHours, price, serviceTypeID, orderStatusID) VALUES
+(1, 'RS0001',	'Lawn Mowing',		'01:00:00', 50.00, 'L', 'A'),
+(2, 'RS0002',	'Hedge Trimming',	'00:45:00', 45.00, 'T', 'A'),
+(3, 'RS0003',	'Weed Control',		'00:30:00', 35.00, 'F', 'A'),
+(4, 'RS0004',	'Fertilizing',		'01:15:00', 60.00, 'O', 'A'),
+(5, 'RS0005',	'Leaf Raking',		'01:00:00', 40.00, 'L', 'A'),
+(6, 'RS0006',	'Irrigation Check',	'00:30:00', 30.00, 'O', 'A'),
+(7, 'RS0007',	'Pest Control',		'00:45:00', 55.00, 'O', 'A'),
+(8, 'RS0008',	'Garden Maintenance',	'01:00:00', 50.00, 'L', 'A'),
+(9, 'RS0009',	'Tree Pruning',		'01:30:00', 70.00, 'T', 'A'),
+(10, 'RS0010',	'Mulching',		'00:45:00', 45.00, 'F', 'A'),
+(11, 'RS0011',	'Lawn Aeration',		'01:00:00', 50.00, 'L', 'A'),
+(12, 'RS0012',	'Seasonal Cleanup',	'02:00:00', 80.00, 'L', 'A'),
+(13, 'RS0013',	'Irrigation Repair',	'01:30:00', 65.00, 'O', 'A'),
+(14, 'RS0014',	'Soil Testing',		'00:30:00', 35.00, 'O', 'A'),
+(15, 'RS0015',	'Pruning Shrubs',	'00:45:00', 45.00, 'T', 'A'),
+(16, 'RS0016',	'Garden Weeding',	'01:00:00', 50.00, 'F', 'A'),
+(17, 'RS0017',	'Fountain Maintenance','01:00:00', 55.00, 'O', 'A'),
+(18, 'RS0018',	'Pond Cleaning',		'01:30:00', 60.00, 'O', 'A'),
+(19, 'RS0019',	'Landscape Lighting',	'01:00:00', 50.00, 'O', 'A'),
+(20, 'RS0020',	'Irrigation Install',	'02:00:00', 90.00, 'O', 'A'),
+(21, 'RS0021',	'Garden Cleanup',	'01:15:00', 55.00, 'O', 'A'),
+(22, 'RS0022',	'Irrigation Maint.',	'01:00:00', 65.00, 'O', 'A'),
+(23, 'RS0023',	'Mulch Replacement',	'00:45:00', 48.00, 'F', 'A'),
+(24, 'RS0024',	'Tree Health Check',	'01:00:00', 60.00, 'T', 'A'),
+(25, 'RS0025',	'Seasonal Pruning',	'01:30:00', 75.00, 'T', 'A'),
+(26, 'RS0026',	'Lawnmowing',		'01:00:00', 45.00, 'L', 'A'),
+(27, 'RS0027',	'Hedge Trim',		'00:45:00', 40.00, 'T', 'A'),
+(28, 'RS0028',	'Weedwacking',		'00:30:00', 35.00, 'F', 'A'),
+(29, 'RS0029',	'Fertilizing',		'01:00:00', 50.00, 'O', 'A'),
+(30, 'RS0030',	'Raking S Bed',		'00:45:00', 42.00, 'L', 'A'),
+(31, 'RS0031',	'Irrigation Check',	'00:30:00', 38.00, 'O', 'A'),
+(32, 'RS0032',	'Lawn Edging',		'00:45:00', 44.00, 'O', 'A'),
+(33, 'RS0033',	'Garden Trimming',	'01:00:00', 46.00, 'L', 'A'),
+(34, 'RS0034',	'Pruning Tree',		'01:00:00', 55.00, 'T', 'A'),
+(35, 'RS0035',	'Mulch Fill',		'01:00:00', 48.00, 'F', 'A'),
+(36, 'RS0036',	'Aerate Lawn',		'01:00:00', 50.00, 'L', 'A'),
+(37, 'RS0037',	'Clean Up',		'01:30:00', 60.00, 'L', 'A'),
+(38, 'RS0038',	'Repair Sprinkler',	'01:00:00', 52.00, 'O', 'A'),
+(39, 'RS0039',	'Mow Backyard',		'00:45:00', 47.00, 'L', 'A'),
+(40, 'RS0040',	'Spray Roundup',		'00:30:00', 40.00, 'O', 'A'),
+(41, 'RS0041',	'Weeding Beds',		'00:45:00', 36.00, 'F', 'A'),
+(42, 'RS0042',	'Lawnmowing',		'01:00:00', 45.00, 'L', 'A'),
+(43, 'RS0043',	'Trim Hedges',		'00:45:00', 42.00, 'T', 'A'),
+(44, 'RS0044',	'Fertilize Backyard',	'01:00:00', 50.00, 'O', 'A'),
+(45, 'RS0045',	'Pest Control',		'00:45:00', 40.00, 'O', 'A'),
+(46, 'RS0046',	'Aerate Lawn',		'01:00:00', 45.00, 'L', 'A'),
+(47, 'RS0047',	'Trim Bushes',		'00:45:00', 42.00, 'T', 'A'),
+(48, 'RS0048',	'Weeding Sideyard',	'00:30:00', 35.00, 'F', 'A'),
+(49, 'RS0049',	'Fertilize Front',	'01:00:00', 50.00, 'O', 'A'),
+(50, 'RS0050',	'Rake Leaves',		'00:45:00', 40.00, 'L', 'A'),
+(51, 'RS0051',	'Irrigation Test',	'00:30:00', 38.00, 'O', 'A'),
+(52, 'RS0052',	'Pest Control Plus',	'00:45:00', 44.00, 'O', 'A'),
+(53, 'RS0053',	'Garden Design',		'01:00:00', 46.00, 'L', 'A'),
+(54, 'RS0054',	'Prune Shrubs',		'01:00:00', 55.00, 'T', 'A'),
+(55, 'RS0055',	'Mulch Top-up',		'01:00:00', 48.00, 'F', 'A'),
+(56, 'RS0056',	'Aerate Turf',		'01:00:00', 50.00, 'L', 'A'),
+(57, 'RS0057',	'Clean Up Yard',		'01:30:00', 60.00, 'L', 'A'),
+(58, 'RS0058',	'Replant Beds',		'01:00:00', 52.00, 'O', 'A'),
+(59, 'RS0059',	'Mow Front',		'00:45:00', 47.00, 'L', 'A'),
+(60, 'RS0060',	'Spray Fertilizer',	'00:30:00', 40.00, 'O', 'A'),
+(61, 'RS0061',	'Weed Removal',		'00:45:00', 36.00, 'F', 'A'),
+(62, 'RS0062',	'Lawn Mowing',		'01:00:00', 45.00, 'L', 'A'),
+(63, 'RS0063',	'Edge Lawn',		'00:45:00', 42.00, 'T', 'A'),
+(64, 'RS0064',	'Fertilize Lawns',	'01:00:00', 50.00, 'O', 'A'),
+(65, 'RS0065',	'Pest Control',		'00:45:00', 40.00, 'O', 'A'),
+(66, 'RS0066',	'Rake Debris',		'00:45:00', 40.00, 'L', 'A'),
+(67, 'RS0067',	'Irrigation Check',	'00:30:00', 38.00, 'O', 'A'),
+(68, 'RS0068',	'Garden Pruning',	'01:00:00', 46.00, 'L', 'A'),
+(69, 'RS0069',	'Prune Trees',		'01:00:00', 55.00, 'T', 'A'),
+(70, 'RS0070',	'Mulch Application',	'01:00:00', 48.00, 'F', 'A'),
+(71, 'RS0071',	'Aerate Grass',		'01:00:00', 50.00, 'L', 'A'),
+(72, 'RS0072',	'Clean Up ',		'01:30:00', 60.00, 'L', 'A'),
+(73, 'RS0073',	'Fertilize Flowers',	'01:00:00', 52.00, 'O', 'A'),
+(74, 'RS0074',	'Mow Lawn',		'00:45:00', 47.00, 'L', 'A'),
+(75, 'RS0075',	'Spray Herbicide',	'00:30:00', 40.00, 'O', 'A'),
+(76, 'RS0076',	'Weed Removal',		'00:45:00', 36.00, 'F', 'A'),
+(77, 'RS0077',	'Lawnmowing Plus',	'01:00:00', 45.00, 'L', 'A'),
+(78, 'RS0078',	'Trim Hedges',		'00:45:00', 42.00, 'T', 'A'),
+(79, 'RS0079',	'Fertilize',		'01:00:00', 50.00, 'O', 'A'),
+(80, 'RS0080',	'Pest Control',		'00:45:00', 40.00, 'O', 'A'),
+(81, 'RS0081',	'Rake Leaves',		'00:45:00', 40.00, 'L', 'A'),
+(82, 'RS0082',	'Irrigation Test',	'00:30:00', 38.00, 'O', 'A');
+
+
+
+-- RecurringServiceList: assign recurring service(s) to each property.
+-- Each recurring service (by ID) appears only once across the entire table.
+INSERT INTO RecurringServiceList (propertyID, recurringServiceID, frequencyTypeID, activeStatus) VALUES
+(1, 1, 'W', TRUE),   
+(1, 2, 'B', TRUE),   
+
+(2, 3, 'W', TRUE),   
+
+(3, 4, 'W', TRUE),   
+(3, 5, 'M', TRUE), 
+
+(4, 6, 'W', TRUE),  
+
+(5, 7, 'W', TRUE), 
+
+(6, 8, 'W', TRUE),   
+
+(7, 9, 'W', TRUE),  
+
+(8, 10, 'W', TRUE),   
+
+(9, 11, 'W', TRUE),   
+
+(10, 12, 'W', TRUE),   
+
+(11, 13, 'B', TRUE),  
+(11, 14, 'M', TRUE),  
+
+(12, 15, 'W', TRUE),   
+(12, 16, 'M', TRUE),   
+
+(13, 17, 'W', TRUE),  
+(13, 18, 'W', TRUE),   
+
+(14, 19, 'W', TRUE),   
+(14, 20, 'W', TRUE),   
+
+(15, 21, 'W', TRUE),   
+(15, 22, 'M', TRUE), 
+(15, 23, 'Q', TRUE),  
+(15, 24, 'Q', TRUE),  
+(15, 25, 'W', TRUE),
+  
+(16,	26, 'W', TRUE),
+(16,	27, 'B', TRUE),
+(16,	28, 'M', TRUE),
+(16,	29, 'W', TRUE),
+
+(17, 30, 'W', TRUE),
+(17, 31, 'B', TRUE),
+(17, 32, 'M', TRUE),
+(17, 33, 'W', TRUE),
+
+(18, 34, 'W', TRUE),
+(18, 35, 'B', TRUE),
+(18, 36, 'M', TRUE),
+(18, 37, 'W', TRUE),
+
+(19, 38, 'W', TRUE),
+(19, 39, 'B', TRUE),
+(19, 40, 'M', TRUE),
+(19, 41, 'W', TRUE),
+
+(20, 42, 'W', TRUE),
+(20, 43, 'B', TRUE),
+(20, 44, 'M', TRUE),
+(20, 45, 'W', TRUE),
+
+(21, 46, 'W', TRUE),
+(21, 47, 'B', TRUE),
+(21, 48, 'M', TRUE),
+(21, 49, 'W', TRUE),
+(21, 50, 'Q', TRUE),
+
+(22, 51, 'W', TRUE),
+(22, 52, 'B', TRUE),
+(22, 53, 'M', TRUE),
+(22, 54, 'W', TRUE),
+(22, 55, 'Q', TRUE),
+
+(23, 56, 'W', TRUE),
+(23, 57, 'B', TRUE),
+(23, 58, 'M', TRUE),
+(23, 59, 'W', TRUE),
+(23, 60, 'Q', TRUE),
+
+(24, 61, 'W', TRUE),
+(24, 62, 'B', TRUE),
+(24, 63, 'M', TRUE),
+(24, 64, 'W', TRUE),
+(24, 65, 'Q', TRUE),
+
+(25, 66, 'W', TRUE),
+(25, 67, 'B', TRUE),
+(25, 68, 'M', TRUE),
+(25, 69, 'W', TRUE),
+(25, 70, 'Q', TRUE),
+
+(26, 71, 'W', TRUE),
+(26, 72, 'B', TRUE),
+
+(27, 73, 'W', TRUE),
+(27, 74, 'B', TRUE),
+(27, 75, 'M', TRUE),
+
+(28, 76, 'W', TRUE),
+(28, 77, 'B', TRUE),
+
+(29, 78, 'W', TRUE),
+(29, 79, 'B', TRUE),
+(29, 80, 'M', TRUE),
+
+(30, 81, 'W', TRUE),
+(30, 82, 'B', TRUE);
+
+
+-------------------------------
+-- Work Records --
+-------------------------------
+
+-- For a few recurring services, insert work records
+INSERT INTO WorkRecord (id, workRecordNum, recurringServiceID, startTime, endTime, employeeID) VALUES
+(1,	'WR0001', 1, 	  '2025-01-05 08:00', '2025-01-05 09:00', 1),
+(2,	'WR0002', 1, 	  '2025-01-12 08:00', '2025-01-12 09:00', 4),
+(3,	'WR0003', 2, 	  '2025-01-06 10:00', '2025-01-06 10:45', 4),
+(4, 'WR0004', 3, 	  '2025-01-07 09:30', '2025-01-07 10:00', 6),
+(5, 'WR0005', 4, 	  '2025-01-08 11:00', '2025-01-08 12:15', 8),
+(6, 'WR0006', 11,   '2025-01-09 08:30', '2025-01-09 09:30', 1),
+(7, 'WR0007', 12,   '2025-01-10 08:30', '2025-01-10 09:30', 5),
+(8,	'WR0008', 4,    '2025-01-08 11:00', '2025-01-08 12:15', 8),
+(9,	'WR0009', 4,    '2025-01-15 11:00', '2025-01-15 12:15', 8),
+(10,	'WR0010', 5,	'2025-01-09 08:30', '2025-01-09 09:30', 1),
+(11,	'WR0011', 5,	'2025-01-16 08:30', '2025-01-16 09:30', 1),
+(12,	'WR0012', 6,	'2025-01-10 08:30', '2025-01-10 09:30', 8),
+(13,	'WR0013', 7,	'2025-01-11 08:30', '2025-01-11 09:30', 3),
+(14,	'WR0014', 8,	'2025-01-12 08:30', '2025-01-12 09:30', 4),
+(15,	'WR0015', 9,	'2025-01-13 08:30', '2025-01-13 09:30', 5),
+(16,	'WR0016', 10,	'2025-01-14 08:30', '2025-01-14 09:30', 6),
+(17,	'WR0017', 11,	'2025-01-15 08:30', '2025-01-15 09:30', 9),
+(18,	'WR0018', 12,	'2025-01-16 08:30', '2025-01-16 09:30', 8),
+(19,	'WR0019', 13,	'2025-01-17 08:30', '2025-01-17 09:30', 9),
+(20,	'WR0020', 14,	'2025-01-18 08:30', '2025-01-18 09:30', 10),
+(21,	'WR0021', 15,	'2025-01-19 08:30', '2025-01-19 09:30', 1),
+(22,	'WR0022', 16,	'2025-01-20 08:30', '2025-01-20 09:30', 1),
+(23,	'WR0023', 17,	'2025-01-21 08:30', '2025-01-21 09:30', 3),
+(24,	'WR0024', 18,	'2025-01-22 08:30', '2025-01-22 09:30', 4),
+(25,	'WR0025', 19,	'2025-01-23 08:30', '2025-01-23 09:30', 5),
+(26,	'WR0026', 20,	'2025-01-24 08:30', '2025-01-24 09:30', 6),
+(27,	'WR0027', 21,	'2025-01-25 08:30', '2025-01-25 09:30', 3),
+(28,	'WR0028', 22,	'2025-01-26 08:30', '2025-01-26 09:30', 8),
+(29,	'WR0029', 23,	'2025-01-27 08:30', '2025-01-27 09:30', 9),
+(30,	'WR0030', 24,	'2025-01-28 08:30', '2025-01-28 09:30', 10),
+(31,	'WR0031', 25,	'2025-01-29 08:30', '2025-01-29 09:30', 1);
+
+-------------------------------
+-- Invoices --
+-------------------------------
+
+-- Generate a few sample invoices based on work records
+INSERT INTO Invoice (id, clientID, invoiceNumber, totalAmount, workRecordID, periodStart, periodEnd, dueDate, invoiceDate, invoiceStandingID) VALUES
+(1, 1, 'INV0001', 50.00, 1, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G'),
+(2, 1, 'INV0002', 50.00, 2, '2025-02-01', '2025-01-31', '2025-03-05 00:00', '2025-02-28 00:00', 'G'),
+(3, 2, 'INV0003', 45.00, 3, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G'),
+(4, 3, 'INV0004', 35.00, 4, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G'),
+(5, 4, 'INV0005', 60.00, 5, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G');
+
+
