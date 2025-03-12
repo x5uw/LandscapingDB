@@ -37,7 +37,7 @@ Global Configuration (config.py)
 
 ## DB_CONFIG:
 Contains the database connection settings (host, dbname, user, password).
-### **Team Note:** 
+### **TEAM NOTE:** 
 - Update the password or other values if your local settings differ.
 
 ## Files Overview
