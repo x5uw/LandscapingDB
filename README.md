@@ -4,6 +4,8 @@ LandscapeDB Project
 ## Overview
 LandscapeDB is a command‑line Python application that interacts with a PostgreSQL database using psycopg2. The project is organized into separate modules so that each team member can develop their own API endpoints independently. Every API module (for client management, property management, service management, work record management, employee management, and financial management) implements a common interface defined by the APIEndpoint abstract class.
 
+Using this program requires importing "psycopg2" on to your local device for interfacing with postgres
+
 The system works as follows:
 
 ## Database Connection: 
