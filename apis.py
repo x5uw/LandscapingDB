@@ -23,20 +23,16 @@
 from propertymanagement import (
     ListPropertiesAPI, 
     DetailPropertyAPI, 
-    ComplexQueryPropertiesAPI,
-    CrupdateSinglePropertyAPI,
     CrupdateMultiplePropertiesAPI
     )
 
-def get_all_apis(conn):
-    
-    # Returns a list of API endpoint instances.
-    # Each module’s API class is instantiated with the same DB connection.
 
+
+# Returns a list of API endpoint instances.
+# Each module’s API class is instantiated with the same DB connection.
+def get_all_apis(conn):    
     return [
         ListPropertiesAPI(conn),
         DetailPropertyAPI(conn),
-        ComplexQueryPropertiesAPI(conn),
-        CrupdateSinglePropertyAPI(conn),
         CrupdateMultiplePropertiesAPI(conn),
     ]
