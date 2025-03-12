@@ -24,7 +24,7 @@ The apis.py file imports the individual API classes and provides a function get_
 ## Driver: 
 The driver.py file is the main entry point. It connects to the database, retrieves the list of API objects from apis.py, and presents a CLI menu. The user selects an API by number, after which the API’s details are displayed and its execution method is called.
 
-### How to Add New APIs
+## How to Add New APIs
 Create Your Module File:
 - For example, if you're working on client management, create or update clientmanagement.py.
 - In your file, define one or more classes that inherit from APIEndpoint (from api_endpoint.py) and implement the required methods.
