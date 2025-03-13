@@ -1,81 +1,124 @@
-# propertymanagement.py
+#propertymanagement.py
 
 from api_endpoint import APIEndpoint
 
-#********************************************************************************
-#********************************************************************************
 
-#List API
+
+# ---------------------------
+# ListPropertiesAPI using prepared statement inline
+# ---------------------------
 class ListPropertiesAPI(APIEndpoint):
+    # Initialize Class Instance
     def __init__(self, conn):
         self.conn = conn
+        # Prepare the SQL statement for listing properties.
+        # This statement returns all columns from Property. It filters by activeStatus and city,
+        # using bind variables ($1 and $2) and allowing for NULL values (which disable filtering).
+        cur = self.conn.cursor()
+        try:
+            cur.execute("""
+                PREPARE list_properties(boolean, text) AS
+                SELECT *
+                FROM Property
+                WHERE ($1 IS NULL OR activeStatus = $1)
+                    AND ($2 IS NULL OR city = $2);
+            """)
+            self.conn.commit() # Commit the prepare command
+        except Exception as e:
+            self.conn.rollback()
+            print("Error preparing list_properties:", e)
+        finally:
+            cur.close()
+
 
     # Displays brief description of API for API Listing Page
     def display_brief(self, index):
         print(f"{index}. ListProperties - Lists property records (optional filters).")
 
+
     # Displays details of API and its use
     def display_details(self):
         print("\n--- ListProperties ---")
-        print("Description: Retrieves a list of property records. You may optionally filter by activeStatus and city.")
-        print("Parameters: ")
-        print("\t- activeStatus (true/false)") 
-        print("\t- city")
-        print("\t- Example: activeStatus = true, city = Seattle")
+        print("Description: Retrieves a list of property records with optional filters.")
+        print("Parameters:")
+        print("\t- activeStatus (true/false) or leave empty for all")
+        print("\t- city or leave empty for all")
+        print("\tExample: activeStatus = true, city = Seattle")
         print("-------------------------\n")
 
-    # Function for executing API
-    def execute(self):
-        # EXAMPLE PSQL QUERY FOR REFERENCE:
-        # SELECT * FROM Property;
 
-        filter_active = input("Enter activeStatus filter (true/false or leave empty for all): ").strip()
+    # Function for executing API and collecting user input
+    def execute(self):
+        filter_active = input("Enter activeStatus filter (true/false or leave empty for all): ").strip().lower()
         filter_city = input("Enter city filter (or leave empty for all): ").strip()
 
-        # Create Query for Database
-        query = "SELECT * FROM Property"
-        conditions = []
-        if filter_active:
-            conditions.append(f"activestatus = {filter_active}")
-        if filter_city:
-            conditions.append(f"city = '{filter_city}'")
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-        query += ";"
+        # Convert inputs to proper types: if empty, then use None (which becomes SQL NULL)
+        if filter_active == "":
+            active_filter = None
+        elif filter_active == "true":
+            active_filter = True
+        elif filter_active == "false":
+            active_filter = False
+        else:
+            print("Invalid activeStatus input. Use true or false.")
+            return
+
+        city_filter = filter_city if filter_city != "" else None
 
         cur = self.conn.cursor()
         try:
-            cur.execute(query)
+            # Execute the prepared statement "list_properties" with parameters
+            cur.execute("EXECUTE list_properties(%s, %s);", (active_filter, city_filter))
             rows = cur.fetchall()
-            print("\nList of Properties:")
             
-            for row in rows:
-                # Assuming columns: id, clientID, propertyTypeID, propertyNumber, streetAddress, streetAddress2, city, stateID, zipcode, activeStatus
-                print(f"PropertyNumber: {row[3]}" )
-                print(f"StreetAddress: {row[4]}" )
-                print(f"StreetAddress2: {row[5]}" )
-                print(f"City: {row[6]}" )
-                print(f"State: {row[7]}" )
-                print(f"Zipcode: {row[8]}" )
+            # Display Results
+            print("\nList of Properties:")
+            for row in rows: # Iterates through each row in table
+                print(f"PropertyNumber: {row[3]}")
+                print(f"StreetAddress: {row[4]}")
+                print(f"StreetAddress2: {row[5]}")
+                print(f"City: {row[6]}")
+                print(f"State: {row[7]}")
+                print(f"Zipcode: {row[8]}")
                 print("\n")
-
         except Exception as e:
-            print("Error executing query:", e)
-
+            print("Error executing prepared statement:", e)
         finally:
             cur.close()
 
-#********************************************************************************
-#********************************************************************************
 
-#Detail API
+
+
+# ---------------------------
+# DetailPropertyAPI using prepared statement inline
+# ---------------------------
 class DetailPropertyAPI(APIEndpoint):
+    # Initialize Class Instance
     def __init__(self, conn):
         self.conn = conn
-    
+        # Prepare the SQL statement for retrieving property details.
+        # This join returns columns from both Property and Client tables.
+        cur = self.conn.cursor()
+        try:
+            cur.execute("""
+                PREPARE detail_property(text) AS
+                SELECT *
+                FROM Property
+                    JOIN Client ON (Property.clientID = Client.id)
+                WHERE propertynumber = $1;
+            """)
+            self.conn.commit() # Commit the prepare command
+        except Exception as e:
+            self.conn.rollback()
+            print("Error preparing detail_property:", e)
+        finally:
+            cur.close()
+
+
     # Displays brief description of API for API Listing Page
     def display_brief(self, index):
-        print(f"{index}. DetailProperty - Shows details for a given property and Client information")
+        print(f"{index}. DetailProperty - Shows details for a given property with client ownership information")
+
 
     # Displays details of API and its use
     def display_details(self):
@@ -83,59 +126,67 @@ class DetailPropertyAPI(APIEndpoint):
         print("Description: Retrieves full details for a property identified by propertyNumber.")
         print("Parameters:")
         print("\t- propertyNumber (string)")
-        print("\t- Example: DetailProperty('P00001')")
-        print("----32---------------------\n")
+        print("\tExample: DetailProperty = P0001")
+        print("-------------------------\n")
 
-    # Function for executing API
+
+    # Function for executing API and collecting user input
     def execute(self):
-        #EXAMPLE PSQL QUERY FOR REFERENCE 
-        # SELECT *
-        # FROM Property
-        #       JOIN Client ON (Property.clientid = Client.id)
-        # WHERE propertynumber = 'P002';
-
-        # Create query for database
         property_number = input("Enter property number: ").strip()
-        query = f"SELECT * FROM Property JOIN Client ON (Property.clientID = Client.id) WHERE propertynumber = '{property_number}';"
         cur = self.conn.cursor()
-        
-        # Try to execute the query
         try:
-            cur.execute(query)
+            # Execute the prepared statement "detail_property" with the provided property number
+            cur.execute("EXECUTE detail_property(%s);", (property_number,))
             rows = cur.fetchall()
-            print("Property Details")
             
-            # Print details on each API
-            for row in rows:
-                print(f"PropertyNumber: {row[3]}" )
-                print(f"StreetAddress: {row[4]}" )
-                print(f"StreetAddress2: {row[5]}" )
-                print(f"City: {row[6]}" )
-                print(f"State: {row[7]}" )
-                print(f"Zipcode: {row[8]}" )
-                print(f"Property Type: ") # FIXME: NEED TO ADD PROPER ROW FOR THIS
-                print(f"Client Name: {row[12]} {row[13]}" )
-                print(f"Account Number: {row[11]}" )
+            # Display Results
+            print("Property Details:")
+            for row in rows: # Iterates through each row in table
+                print(f"PropertyNumber: {row[3]}")
+                print(f"StreetAddress: {row[4]}")
+                print(f"StreetAddress2: {row[5]}")
+                print(f"City: {row[6]}")
+                print(f"State: {row[7]}")
+                print(f"Zipcode: {row[8]}")
+                print(f"Client Name: {row[12]} {row[13]}")
+                print(f"Account Number: {row[11]}")
+                print(f"Explanation: {row[-1]}")
                 print("\n")
-
         except Exception as e:
-            print("Error executing query:", e)
-
+            print("Error executing prepared statement:", e)
         finally:
-            cur.close() 
+            cur.close()
 
-#********************************************************************************
-#********************************************************************************
 
-#Crupdate Single Record API
 
-#********************************************************************************
-#********************************************************************************
 
-#Crupdate Multiple API
+# ---------------------------
+# CrupdateMultiplePropertiesAPI using prepared statement and transactions inline
+# ---------------------------
 class CrupdateMultiplePropertiesAPI(APIEndpoint):
+    # Initialize Class Instance
     def __init__(self, conn):
         self.conn = conn
+        # Prepare the SQL statement for updating properties
+        cur = self.conn.cursor()
+        try:
+            cur.execute("""
+                PREPARE update_properties(text, boolean) AS
+                UPDATE Property
+                SET activeStatus = $2
+                WHERE clientID = (
+                        SELECT id 
+                        FROM Client 
+                        WHERE accountNumber = $1
+                    )
+                RETURNING propertynumber, streetaddress, activeStatus, 'UpdateProperties executed' AS explanation;
+            """)
+            self.conn.commit() # Commit the prepare command
+        except Exception as e:
+            self.conn.rollback()
+            print("Error preparing update_properties:", e)
+        finally:
+            cur.close()
 
     # Displays brief description of API for API Listing Page
     def display_brief(self, index):
@@ -146,49 +197,38 @@ class CrupdateMultiplePropertiesAPI(APIEndpoint):
         print("\n--- CrupdateMultipleProperties ---")
         print("Description: Updates activeStatus for all properties belonging to a specific client.")
         print("Parameters:")
-        print("\t- accountNumber")
+        print("\t- accountNumber (string)")
         print("\t- new activeStatus (true/false)")
-        print("\t- Example: accountNumber = C0002, activeStatus = false")
+        print("\tExample: accountNumber = C0002, activeStatus = false")
         print("-------------------------\n")
 
     # Function for executing API
     def execute(self):
-        # Prompt for the accountNumber and the new activeStatus
         accountNumber = input("Enter client account number to update properties: ").strip()
-        newStatus = input("Enter new activeStatus (true/false): ").strip().lower()
-        
-        # Create a cursor for executing queries
+        new_status_input = input("Enter new activeStatus (true/false): ").strip().lower()
+        if new_status_input not in ["true", "false"]:
+            print("Invalid input for activeStatus. Please enter true or false.")
+            return
+        new_status = True if new_status_input == "true" else False
+
         cur = self.conn.cursor()
         try:
-            # 1. Validate the accountNumber and retrieve the surrogate clientID
-            cur.execute("SELECT id FROM Client WHERE accountnumber = %s;", (accountNumber,))
-            client = cur.fetchone()
-            if client is None:
-                print("Invalid account number. No such client exists.")
-                return
-            clientID = client[0]
+            # Begin a transaction
+            cur.execute("BEGIN;")
             
-            # 2. Begin the transaction and perform the update
-            # (psycopg2 manages transactions automatically; if an error occurs, we'll roll back)
-            cur.execute("UPDATE Property SET activeStatus = %s WHERE clientID = %s;", (newStatus, clientID))
-            
-            # 3. After updating, fetch all properties for this client to show the changes
-            cur.execute("SELECT propertynumber, streetaddress, activeStatus FROM Property WHERE clientID = %s;", (clientID,))
-            properties = cur.fetchall()
-            
-            # 4. Commit the transaction.
+            # Execute the prepared statement "update_properties" with parameters
+            cur.execute("EXECUTE update_properties(%s, %s);", (accountNumber, new_status))
+            updated_rows = cur.fetchall()
             self.conn.commit()
             print("Operation successful: Updated multiple records.\n")
             
-            # 5. Print out the updated property information.
+            # Display Results
             print("Updated Properties:")
-            for prop in properties:
-                print(f"PropertyNumber: {prop[0]}, StreetAddress: {prop[1]}") 
-                print(f"ActiveStatus: {prop[2]}\n")
-
+            for prop in updated_rows:
+                print(f"PropertyNumber: {prop[0]}, StreetAddress: {prop[1]}, ActiveStatus: {prop[2]}")
+                print(f"Explanation: {prop[-1]}")
         except Exception as e:
-            print("Error during update:", e)
             self.conn.rollback()
-
+            print("Error during update:", e)
         finally:
             cur.close()
