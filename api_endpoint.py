@@ -1,8 +1,8 @@
 # api_endpoint.py
 
 class APIEndpoint:
-    #Abstract base class for all API endpoints.
-    #Each API must implement:
+    # Abstract base class for all API endpoints
+    # Each API must implement:
     #   - display_brief(index): Print a one-line summary
     #   - display_details(): Print detailed usage information
     #   - execute(): Prompt for input and perform the database operation
@@ -15,3 +15,4 @@ class APIEndpoint:
 
     def execute(self):
         raise NotImplementedError
+
