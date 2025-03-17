@@ -50,7 +50,6 @@ The `driver.py` file is the main entry point. It connects to the database, retri
 
 ## Files Overview
 - **config.py:** Global database settings.
-- **database.py:** Contains `connect_to_db()` that creates a database connection using psycopg2.
 - **api_endpoint.py:** Defines the abstract APIEndpoint class.
 - **apis.py:** Aggregates API objects (each team member’s module will be added here).
 - **clientmanagement.py, propertymanagement.py, servicemanagement.py, workrecordmanagement.py, employeemanagement.py, financialmanagement.py:**  
