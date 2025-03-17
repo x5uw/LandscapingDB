@@ -4,9 +4,10 @@
 #
 #)
 
-#from servicemanagement import (
-#
-#)
+from servicemanagement import (
+    AssignRecurringService,
+    UpdateService
+    )
 
 #from workrecordmanagement import (
 #
@@ -33,4 +34,6 @@ def get_all_apis(conn):
         ListPropertiesAPI(conn),
         DetailPropertyAPI(conn),
         CrupdateMultiplePropertiesAPI(conn),
+        AssignRecurringService(conn),
+        UpdateService(conn)
     ]
