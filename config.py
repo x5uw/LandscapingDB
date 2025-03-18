@@ -5,5 +5,5 @@ DB_CONFIG = {
     "host": "localhost",
     "dbname": "landscapingdb",
     "user": "postgres",
-    "password": "PASSWORD",  # Replace with your actual password
+    "password": "XXXXX",  # Replace with your actual password
 }

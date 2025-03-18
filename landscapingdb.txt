@@ -170,28 +170,43 @@ CREATE TABLE IF NOT EXISTS Property (
 );
 \qecho
 
-
-
 \qecho Creating Table "RecurringService"
--- 10) RecurringService
+-- 10) RecurringService Table
+CREATE SEQUENCE IF NOT EXISTS service_num_seq START WITH 1 INCREMENT BY 1;
+
 CREATE TABLE IF NOT EXISTS RecurringService (
-    	id 				SERIAL,
-    	serviceNum 		VARCHAR(10) 	UNIQUE NOT NULL,
-    	name 			VARCHAR(50) 	NOT NULL,
-    	allocatedManHours	INTERVAL 	NOT NULL,
-    	price 			MONEY 		NOT NULL,
-    	serviceTypeID 	CHAR(2) 		NOT NULL,
-    	orderStatusID 	CHAR(2) 		NOT NULL,
-    
-	PRIMARY KEY		(id),
-	CONSTRAINT fk_service_type
-        	FOREIGN KEY	(serviceTypeID) REFERENCES ServiceType(id),
-    	CONSTRAINT fk_order_status
-        	FOREIGN KEY	(orderStatusID) REFERENCES OrderStatus(id)
+    id SERIAL PRIMARY KEY,
+    serviceNum VARCHAR(10) UNIQUE NOT NULL DEFAULT ('RS' || LPAD(nextval('service_num_seq')::TEXT, 4, '0')),
+    name VARCHAR(50) NOT NULL,
+    allocatedManHours INTERVAL NOT NULL,
+    price MONEY NOT NULL,
+    serviceTypeID CHAR(2) NOT NULL,
+    orderStatusID CHAR(2) NOT NULL,
+    CONSTRAINT fk_service_type FOREIGN KEY (serviceTypeID) REFERENCES ServiceType(id),
+    CONSTRAINT fk_order_status FOREIGN KEY (orderStatusID) REFERENCES OrderStatus(id)
 );
 \qecho
 
+\qecho Creating Trigger to Auto-Generate serviceNum
+-- Ensure the trigger doesn't already exist before creating it
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_service_num') THEN
+        CREATE FUNCTION generate_service_num() RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.serviceNum IS NULL THEN
+                NEW.serviceNum := 'RS' || LPAD(nextval('service_num_seq')::TEXT, 4, '0');
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
 
+        CREATE TRIGGER set_service_num
+        BEFORE INSERT ON RecurringService
+        FOR EACH ROW EXECUTE FUNCTION generate_service_num();
+    END IF;
+END $$;
+\qecho
 
 \qecho Creating Table "WorkRecord"
 -- 11) WorkRecord

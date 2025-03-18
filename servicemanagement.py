@@ -4,16 +4,26 @@ from api_endpoint import APIEndpoint
 
 # ---------------------------
 # AssignRecurringService API
+# Author: Minh Tran
 # ---------------------------
 class AssignRecurringService(APIEndpoint):
+    """ API to assign a new recurring service to a property """
+
     def __init__(self, conn):
         self.conn = conn
         cur = self.conn.cursor()
         try:
+            # Prepare SQL statement for assigning a recurring service
             cur.execute("""
-                PREPARE assign_recurring_service(text, text, text, interval, money) AS
-                INSERT INTO RecurringService(propertyNumber, serviceTypeCode, serviceName, allocatedManHours, price)
-                VALUES ($1, $2, $3, $4, $5)
+                PREPARE assign_recurring_service(text, text, interval, money, text) AS
+                INSERT INTO RecurringService (serviceTypeID, name, allocatedManHours, price, orderStatusID)
+                VALUES (
+                    (SELECT id FROM ServiceType WHERE id = $1),  -- Get service type ID
+                    $2,  -- Service name
+                    $3,  -- Allocated hours
+                    $4,  -- Price
+                    'A'  -- Default OrderStatus to 'Active'
+                )
                 RETURNING serviceNum;
             """)
             self.conn.commit()
@@ -24,32 +34,49 @@ class AssignRecurringService(APIEndpoint):
             cur.close()
 
     def display_brief(self, index):
+        """ Display brief API description """
         print(f"{index}. AssignRecurringService - Assigns a new recurring service to a property.")
 
     def display_details(self):
+        """ Display detailed API usage information """
         print("\n--- AssignRecurringService ---")
-        print("Description: Assigns a new recurring service to a property with details including service type, name, allocated man-hours, and pricing.")
+        print("Assigns a new recurring service to a property with the required details.")
         print("Parameters:")
-        print("\t- propertyNumber (text)")
-        print("\t- serviceTypeCode (text)")
-        print("\t- serviceName (text)")
-        print("\t- allocatedManHours (interval)")
-        print("\t- price (money)")
-        print("\tExample: propertyNumber = 'P001', serviceTypeCode = 'L', serviceName = 'Lawn Mowing', allocatedManHours = '01:00:00', price = 50.00")
+        print("\t- propertyNumber (text): The property number where the service will be assigned")
+        print("\t- serviceType (text): Service Type Code (e.g., 'L' for Lawncare)")
+        print("\t- serviceName (text): Descriptive name of the service")
+        print("\t- allocatedManHours (interval): Time allocated (e.g., '01:30:00')")
+        print("\t- price (money): Cost of the service (e.g., '60.00')")
+        print("\tReturns:")
+        print("\t- The assigned service number (auto-generated)")
+        print("\nExample Input:")
+        print("propertyNumber = 'P001', serviceType = 'L', serviceName = 'Premium Lawn Mowing', allocatedManHours = '01:30:00', price = 60.00")
         print("-------------------------\n")
 
     def execute(self):
+        """ Execute the API by collecting user input """
         property_number = input("Enter property number: ").strip()
-        service_type_code = input("Enter service type code: ").strip()
-        service_name = input("Enter service name: ").strip()
+        service_type = input("Enter service type code (e.g., L, T, F, S, O): ").strip()
+        service_name = input("Enter service name (e.g., Special Lawn Care): ").strip()
         allocated_man_hours = input("Enter allocated man hours (HH:MM:SS): ").strip()
         price = input("Enter price: ").strip()
 
         cur = self.conn.cursor()
         try:
-            cur.execute("EXECUTE assign_recurring_service(%s, %s, %s, %s, %s);", (property_number, service_type_code, service_name, allocated_man_hours, price))
+            # Ensure property exists before inserting service
+            cur.execute("SELECT id FROM Property WHERE propertyNumber = %s;", (property_number,))
+            property_id = cur.fetchone()
+
+            if not property_id:
+                print(f"Error: Property {property_number} does not exist.")
+                return
+
+            # Execute the prepared statement
+            cur.execute("EXECUTE assign_recurring_service(%s, %s, %s, %s, %s);", 
+                        (service_type, service_name, allocated_man_hours, price, property_number))
             service_num = cur.fetchone()[0]
-            print(f"Assigned service number: {service_num}")
+            self.conn.commit()
+            print(f"Service assigned successfully with service number: {service_num}")
         except Exception as e:
             print("Error executing assign_recurring_service:", e)
         finally:
@@ -57,16 +84,25 @@ class AssignRecurringService(APIEndpoint):
 
 # ---------------------------
 # UpdateService API
+# Author: Minh Tran
 # ---------------------------
 class UpdateService(APIEndpoint):
+    # API to update details of an existing recurring service 
+
     def __init__(self, conn):
         self.conn = conn
         cur = self.conn.cursor()
         try:
+            # Prepare SQL statement for updating a recurring service
             cur.execute("""
-                PREPARE update_service(integer, text, interval, money, text, text) AS
+                PREPARE update_service(text, text, interval, money, text, text) AS
                 UPDATE RecurringService
-                SET serviceName = $2, allocatedManHours = $3, price = $4, serviceTypeID = $5, orderStatusName = $6
+                SET 
+                    name = $2, 
+                    allocatedManHours = $3, 
+                    price = $4, 
+                    serviceTypeID = (SELECT id FROM ServiceType WHERE id = $5),  -- Fetch serviceTypeID
+                    orderStatusID = (SELECT id FROM OrderStatus WHERE id = $6)  -- Fetch orderStatusID
                 WHERE serviceNum = $1
                 RETURNING serviceNum;
             """)
@@ -78,34 +114,53 @@ class UpdateService(APIEndpoint):
             cur.close()
 
     def display_brief(self, index):
+        # Display brief API description
         print(f"{index}. UpdateService - Updates details of an existing recurring service.")
 
     def display_details(self):
+        # Display detailed API usage information 
         print("\n--- UpdateService ---")
         print("Description: Updates specific details of an existing recurring service.")
         print("Parameters:")
-        print("\t- serviceNum (integer)")
-        print("\t- serviceName (text)")
-        print("\t- allocatedManHours (interval)")
-        print("\t- price (money)")
-        print("\t- serviceTypeID (text)")
-        print("\t- orderStatusName (text)")
-        print("\tExample: serviceNum = 101, serviceName = 'Advanced Lawn Mowing', allocatedManHours = '02:00:00', price = 100.00, serviceTypeID = 'L', orderStatusName = 'Active'")
+        print("\t- serviceNum (text): Unique service number, e.g., 'RS0084'")
+        print("\t- serviceName (text): Updated service name")
+        print("\t- allocatedManHours (interval): Updated allocated hours, e.g., '02:00:00'")
+        print("\t- price (money): Updated cost, e.g., 100.00")
+        print("\t- serviceType (text): Updated service type code, e.g., 'L' for Lawncare")
+        print("\t- orderStatus (text): Updated order status code, e.g., 'A' for Active")
+        print("\nExample Input:")
+        print("serviceNum = 'RS0084', serviceName = 'Advanced Lawn Care', allocatedManHours = '02:00:00', price = 100.00, serviceType = 'L', orderStatus = 'A'")
         print("-------------------------\n")
 
     def execute(self):
-        service_num = input("Enter service number: ").strip()
-        service_name = input("Enter new service name: ").strip()
-        allocated_man_hours = input("Enter new allocated man hours (HH:MM:SS): ").strip()
-        price = input("Enter new price: ").strip()
-        service_type_id = input("Enter service type ID: ").strip()
-        order_status_name = input("Enter order status name: ").strip()
+        # Execute the API by collecting user input 
+        service_num = input("Enter service number (e.g., RS0084): ").strip()
+        service_name = input("Enter new service name (or press enter to keep current): ").strip() or None
+        allocated_man_hours = input("Enter new allocated man hours (HH:MM:SS, or press enter to keep current): ").strip() or None
+        price = input("Enter new price (or press enter to keep current): ").strip() or None
+        service_type = input("Enter new service type code (e.g., L, T, F, S, O, or press enter to keep current): ").strip() or None
+        order_status = input("Enter new order status code (e.g., A for Active, I for Inactive, P for Paused, or press enter to keep current): ").strip() or None
 
         cur = self.conn.cursor()
         try:
-            cur.execute("EXECUTE update_service(%s, %s, %s, %s, %s, %s);", (service_num, service_name, allocated_man_hours, price, service_type_id, order_status_name))
+            # Ensure the service exists before attempting an update
+            cur.execute("SELECT serviceNum FROM RecurringService WHERE serviceNum = %s;", (service_num,))
+            existing_service = cur.fetchone()
+
+            if not existing_service:
+                print(f"Error: Service with number {service_num} does not exist.")
+                return
+
+            # Execute the prepared statement with updated details
+            cur.execute("EXECUTE update_service (%s, %s, %s, %s, %s, %s);", 
+                        (service_num, service_name, allocated_man_hours, price, service_type, order_status))
             updated_service_num = cur.fetchone()[0]
-            print(f"Updated service number: {updated_service_num}")
+            self.conn.commit()
+
+            if updated_service_num:
+                print(f"Service updated successfully with service number: {updated_service_num}")
+            else:
+                print("Failed to update service. Please check service number and inputs.")
         except Exception as e:
             print("Error executing update_service:", e)
         finally:
