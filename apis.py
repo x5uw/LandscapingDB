@@ -32,7 +32,7 @@ from propertymanagement import (
 # Returns a list of API endpoint instances.
 # Each module’s API class is instantiated with the same DB connection.
 def get_all_apis(conn):    
-    return [
+    return (
         ListPropertiesAPI(conn),
         DetailPropertyAPI(conn),
         CrupdateMultiplePropertiesAPI(conn),
@@ -41,4 +41,4 @@ def get_all_apis(conn):
         ListEmployeesAPI(conn),
         CreateEmployeeAPI(conn),
         EditEmployeeAPI(conn)
-    ]
+    )

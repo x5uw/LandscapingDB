@@ -97,9 +97,11 @@ CREATE TABLE IF NOT EXISTS PropertyType (
 
 \qecho Creating Table "Employee"
 -- 7) Employee
+CREATE SEQUENCE employeeNum_seq START WITH 1 INCREMENT BY 1;
+
 CREATE TABLE IF NOT EXISTS Employee (
     	id 			SERIAL,
-    	employeeNum 		VARCHAR(10) 	UNIQUE NOT NULL,
+    	employeeNum 		TEXT UNIQUE NOT NULL,
     	firstName 		VARCHAR(15) 	NOT NULL,
     	lastName 		VARCHAR(15) 	NOT NULL,
     	phone 			VARCHAR(15) 	NOT NULL,
@@ -110,6 +112,19 @@ CREATE TABLE IF NOT EXISTS Employee (
 
 	PRIMARY KEY		(id)
 );
+
+-- To create unique, sequential auto generated employee numbers (E+'9-digit-number')
+CREATE FUNCTION generate_employee_num() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.employeeNum := 'E' || LPAD(nextval('employeeNum_seq')::TEXT, 9, '0');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_employee_num
+BEFORE INSERT ON Employee
+FOR EACH ROW EXECUTE FUNCTION generate_employee_num();
+
 \qecho
 
 
@@ -366,17 +381,17 @@ INSERT INTO PropertyType VALUES
 -- 	5 with no email
 -- 	wages between $25-$32/hr
 -- 	2 with deactivated dates)
-INSERT INTO Employee (id, employeeNum, firstName, lastName, phone, email, hireDate, deactivatedDate, hourlyWage) VALUES
-(1, 'E000000001', 'Alice', 'Anderson',	'555-0101', 'alice.anderson@example.com', '2020-01-01', NULL, 25.00),
-(2, 'E000000002', 'Bob', 'Brown', '555-0102', 'bob.brown@example.com', '2020-01-01', NULL, 26.00),
-(3, 'E000000003', 'Charlie', 'Clark', '555-0103', NULL, '2020-01-01', '2022-01-01', 27.00),
-(4, 'E000000004', 'Diana', 'Davis', '555-0104', 'diana.davis@example.com','2020-01-01', NULL, 28.00),
-(5, 'E000000005', 'Evan', 'Edwards', '555-0105', NULL, '2020-01-01', NULL, 29.00),
-(6, 'E000000006', 'Fiona', 'Foster', '555-0106', 'fiona.foster@example.com', '2020-01-01', NULL, 30.00),
-(7, 'E000000007', 'George', 'Green', '555-0107', NULL, '2020-01-01', '2022-01-01',	31.00),
-(8, 'E000000008', 'Hannah', 'Hill', '555-0108', 'hannah.hill@example.com', '2020-01-01', NULL, 32.00),
-(9, 'E000000009', 'Ian', 'Iverson', '555-0109', NULL, '2020-01-01', NULL, 28.50),
-(10, 'E000000010', 'Jane', 'Jones', '555-0110', 'jane.jones@example.com', '2020-01-01', NULL, 27.50);
+INSERT INTO Employee (firstName, lastName, phone, email, hireDate, deactivatedDate, hourlyWage) VALUES
+('Alice', 'Anderson',	'555-0101', 'alice.anderson@example.com', '2020-01-01', NULL, 25.00),
+('Bob', 'Brown', '555-0102', 'bob.brown@example.com', '2020-01-01', NULL, 26.00),
+('Charlie', 'Clark', '555-0103', NULL, '2020-01-01', '2022-01-01', 27.00),
+('Diana', 'Davis', '555-0104', 'diana.davis@example.com','2020-01-01', NULL, 28.00),
+('Evan', 'Edwards', '555-0105', NULL, '2020-01-01', NULL, 29.00),
+('Fiona', 'Foster', '555-0106', 'fiona.foster@example.com', '2020-01-01', NULL, 30.00),
+('George', 'Green', '555-0107', NULL, '2020-01-01', '2022-01-01',	31.00),
+('Hannah', 'Hill', '555-0108', 'hannah.hill@example.com', '2020-01-01', NULL, 32.00),
+('Ian', 'Iverson', '555-0109', NULL, '2020-01-01', NULL, 28.50),
+('Jane', 'Jones', '555-0110', 'jane.jones@example.com', '2020-01-01', NULL, 27.50);
 
 
 
