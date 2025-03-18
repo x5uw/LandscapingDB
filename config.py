@@ -3,7 +3,7 @@
 # Global database configuration settings.
 DB_CONFIG = {
     "host": "localhost",
-    "dbname": "landscapedb",
+    "dbname": "landscapingdb",
     "user": "postgres",
-    "password": "**YOUR PASSWORD HERE**"  # Replace with your actual password
+    "password": "PASSWORD",  # Replace with your actual password
 }
