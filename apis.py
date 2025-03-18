@@ -35,7 +35,7 @@ def get_all_apis(conn):
         ListPropertiesAPI(conn),
         UpdateClientPropertiesAPI(conn),
         AssignRecurringService(conn),
-        UpdateService(conn)
+        UpdateService(conn),
         ListEmployeesAPI(conn),
         CreateEmployeeAPI(conn),
         EditEmployeeAPI(conn)
