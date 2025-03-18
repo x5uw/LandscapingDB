@@ -13,9 +13,11 @@ from servicemanagement import (
 #
 #)
 
-#from employeemanagement import (
-#
-#)
+from employeemanagement import (
+    ListEmployeesAPI,
+    CreateEmployeeAPI,
+    EditEmployeeAPI
+)
 
 #from financialmanagement import (
 #
@@ -36,4 +38,7 @@ def get_all_apis(conn):
         CrupdateMultiplePropertiesAPI(conn),
         AssignRecurringService(conn),
         UpdateService(conn)
+        ListEmployeesAPI(conn),
+        CreateEmployeeAPI(conn),
+        EditEmployeeAPI(conn)
     ]
