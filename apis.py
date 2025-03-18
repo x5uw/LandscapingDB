@@ -25,8 +25,7 @@ from employeemanagement import (
 
 from propertymanagement import (
     ListPropertiesAPI, 
-    DetailPropertyAPI, 
-    CrupdateMultiplePropertiesAPI
+    UpdateClientPropertiesAPI, 
     )
 
 # Returns a list of API endpoint instances.
@@ -34,8 +33,7 @@ from propertymanagement import (
 def get_all_apis(conn):    
     return (
         ListPropertiesAPI(conn),
-        DetailPropertyAPI(conn),
-        CrupdateMultiplePropertiesAPI(conn),
+        UpdateClientPropertiesAPI(conn),
         AssignRecurringService(conn),
         UpdateService(conn)
         ListEmployeesAPI(conn),
