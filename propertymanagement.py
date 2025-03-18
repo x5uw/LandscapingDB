@@ -1,9 +1,15 @@
+# Author: Manuel Rodriguez
+# propertymanagement.py
+# Note: Prepared for CSS475, Winter2025, UWB
+# ---------------------------------------------
+
 #propertymanagement.py
 
 from api_endpoint import APIEndpoint
 
 # ---------------------------
 # ListPropertiesAPI (List API)
+# Author: Manuel Rodriguez
 # ---------------------------
 class ListPropertiesAPI(APIEndpoint):
     # Initialize Class Instance
@@ -120,7 +126,8 @@ class ListPropertiesAPI(APIEndpoint):
 
 
 # ---------------------------
-# UpdateClientPropertiesAPI (Crupdate Multiple Records API) 
+# UpdateClientPropertiesAPI (Crupdate Multiple Records API)
+# Author: Manuel Rodriguez 
 # ---------------------------
 class UpdateClientPropertiesAPI(APIEndpoint):
     # Initialize Class Instance
