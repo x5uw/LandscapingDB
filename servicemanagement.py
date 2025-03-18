@@ -10,7 +10,6 @@ class AssignRecurringService(APIEndpoint):
         self.conn = conn
         cur = self.conn.cursor()
         try:
-            # Prepare the SQL statement for creating a new recurring service
             cur.execute("""
                 PREPARE assign_recurring_service(text, text, text, interval, money) AS
                 INSERT INTO RecurringService(propertyNumber, serviceTypeCode, serviceName, allocatedManHours, price)
@@ -64,7 +63,6 @@ class UpdateService(APIEndpoint):
         self.conn = conn
         cur = self.conn.cursor()
         try:
-            # Prepare the SQL statement for updating an existing service
             cur.execute("""
                 PREPARE update_service(integer, text, interval, money, text, text) AS
                 UPDATE RecurringService
