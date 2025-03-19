@@ -193,7 +193,7 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         
         :param index: Index of the API in a list of available APIs
         """
-        print(f"{index}. Retrieve service history for a client.")
+        print(f"{index}. GetServiceHistory - Retrieve service history for a client.")
 
     def display_details(self):
         """
@@ -262,7 +262,7 @@ class ListAssignedServices(APIEndpoint):  # List API for assigned property servi
         
         :param index: Index of the API in a list of available APIs
         """
-        print(f"{index}. List all services assigned to a property.")
+        print(f"{index}. ListAssignedServices - List all services assigned to a property.")
 
     def display_details(self):
         """
