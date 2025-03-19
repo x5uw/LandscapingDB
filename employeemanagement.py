@@ -6,7 +6,12 @@
 from api_endpoint import APIEndpoint
 import re # Regex model for correct formatting
 
+# ---------------------------
+# ListEmployeesAPI (List API)
+# Author: Hyobin Yook
+# ---------------------------
 class ListEmployeesAPI(APIEndpoint):
+
     #initalize class
     def __init__(self, conn):
         self.conn = conn
@@ -26,7 +31,7 @@ class ListEmployeesAPI(APIEndpoint):
 
         except Exception as e:
             self.conn.rollback()
-            print("Error preparing list_employees:", e)
+            print("Error preparing list_employees")
         finally:
             cur.close()
 
@@ -49,11 +54,16 @@ class ListEmployeesAPI(APIEndpoint):
         filter_active = input("Enter activeStatus filter (true/false or leave empty for all): ").strip().lower()
         filter_firstName = input("Enter firstName filter (or leave empty for all): ").strip()
         filter_lastName = input("Enter lastName filter (or leave empty for all): ").strip()
+        
+        # Input validation
+        if any(field.lower() == "quit" for field in [filter_active, filter_firstName, filter_lastName]):
+            print("Operation terminated by user.")
+            return  # Exit the API if "quit" is entered
 
         # Convert inputs to proper types: if empty, then use None
         filter_active_lower = filter_active.strip().lower()
         if filter_active_lower == "":
-            active_filter = None  # Treat empty string as None
+            active_filter = None
         elif filter_active_lower not in {"true", "false"}:
             print("Error: filter_active must be either 'true', 'false', or an empty string (case insensitive).")
             active_filter = None
@@ -82,13 +92,15 @@ class ListEmployeesAPI(APIEndpoint):
             print(f"({len(rows)} rows)")
 
         except Exception as e:
-            print("Error executing list_employees:", e)
+            print("Error executing list_employees:")
         finally:
             cur.close()
 
 
+
 # ---------------------------
-# CreateEmployeeAPI using prepared statement and transactions inline
+# CreateEmployeeAPI (Crupdate Single Records API)
+# Author: Hyobin Yook
 # ---------------------------
 class CreateEmployeeAPI(APIEndpoint):
     # Initialize Class Instance
@@ -107,7 +119,7 @@ class CreateEmployeeAPI(APIEndpoint):
             # Input validation
             # Check if any field is "quit"
             if any(field.lower() == "quit" for field in [firstName, lastName, phone, email, hireDate, hourlyWage]):
-                print("Termination Request received: exiting API...")
+                print("Operation terminated by user.")
                 return  # Exit the API if "quit" is entered
 
             # Check if any field is empty
@@ -138,14 +150,14 @@ class CreateEmployeeAPI(APIEndpoint):
                 cur.execute("EXECUTE create_employee (%s, %s, %s, %s, %s, %s);", 
                             (firstName, lastName, phone, email, hireDate, hourlyWage))
                 
-                employee_number = cur.fetchone()[0]
+                employeeNum = cur.fetchone()[0]
                 self.conn.commit()
-                print(f"Success! Employee created with EmployeeNumber: {employee_number}")
+                print(f"Success! Employee created with EmployeeNumber: {employeeNum}")
                 break
 
             except Exception as e:
                 self.conn.rollback()
-                print("Error creating employee:", e)
+                print("Error creating employee:")
                 break
             finally:
                 cur.close()
@@ -170,115 +182,134 @@ class CreateEmployeeAPI(APIEndpoint):
 
 
 # ---------------------------
-# EditEmployeeAPI using prepared statement and transactions inline
+# EditEmployeeAPI (Crupdate Single Records API)
+# Author: Hyobin Yook
 # ---------------------------
 class EditEmployeeAPI(APIEndpoint):
+    # Initialize Class Instance
     def __init__(self, conn):
-        self.conn = conn
+        self.conn = conn                    # Store the database connection
+        self.cur = self.conn.cursor()       # Create a cursor object for executing SQL statements
 
-    def search_employee(self, cur, first_name=None, last_name=None):
-        """Search for an employee based on given parameters."""
-        query = "SELECT employeenum FROM employee WHERE "
-        conditions = []
-        values = []
-
-        if first_name:
-            conditions.append("firstname = %s")
-            values.append(first_name)
-        if last_name:
-            conditions.append("lastname = %s")
-            values.append(last_name)
-
-        if not conditions:
-            return []  # No conditions means no search
-
-        query += " AND ".join(conditions)
-        cur.execute(query, values)
-        return cur.fetchall()
-
-    def execute(self):
-        cur = self.conn.cursor()
-        try:
-            # Prepare the SQL query dynamically in the execute method
-            cur.execute("""
-                PREPARE edit_employee(text, text, text, text, text, money, date, date) AS
-                UPDATE employee
-                SET 
-                    firstname = COALESCE($2, firstname),
-                    lastname = COALESCE($3, lastname),
-                    phone = COALESCE($4, phone),
-                    email = COALESCE($5, email),
-                    hourlywage = COALESCE($6, hourlywage),
-                    hiredate = COALESCE($7, hiredate),
-                    deactivateddate = COALESCE($8, deactivateddate)
-                WHERE employeenum = $1
-                RETURNING employeenum;
-            """)
-            self.conn.commit()
-
-            # Prompt for employee number or name search
-            employee_number = input("Enter Employee Number (leave blank to search by name): ").strip()
-
-            if not employee_number:
-                first_name = input("Enter First Name (leave blank to search by Last Name): ").strip()
-                search_results = self.search_employee(cur, first_name=first_name)
-
-                if not first_name or len(search_results) > 1:
-                    last_name = input("Enter Last Name: ").strip()
-                    search_results = self.search_employee(cur, first_name=first_name, last_name=last_name)
-
-                if len(search_results) == 1:
-                    employee_number = search_results[0][0]
-                else:
-                    print("ERROR: No employee found by the information. Try again.")
-                    return
-
-            print("\n-------------------------")
-
-            first_name = input("Enter First Name (leave blank to keep current): ").strip() or None
-            last_name = input("Enter Last Name (leave blank to keep current): ").strip() or None
-            phone = input("Enter Phone Number (leave blank to keep current): ").strip() or None
-            email = input("Enter Email (leave blank to keep current): ").strip() or None
-            hourly_wage = input("Enter Hourly Wage (leave blank to keep current): ").strip() or None
-            hire_date = input("Enter Hire Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
-            deactivated_date = input("Enter Deactivated Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
-
-            print("-------------------------")
-
-            # Execute the prepared statement with employee_number and update values
-            cur.execute("EXECUTE edit_employee(%s, %s, %s, %s, %s, %s, %s, %s)",
-                        (employee_number, first_name, last_name, phone, email, hourly_wage, hire_date, deactivated_date))
-            result = cur.fetchone()
-            self.conn.commit()
-
-            if result:
-                print(f"\nEmployee {result[0]} updated successfully.")
-                return {"confirmation": f"Employee {result[0]} updated successfully."}
-            else:
-                print("Error: Employee not found.")
-                return {"errorMessage": "EmployeeNumber not found."}
-            
-        except Exception as e:
-            self.conn.rollback()
-            print("Error updating employee:", e)
-            return {"errorMessage": str(e)}
-        
-        finally:
-            cur.close()
-
+    # Displays brief description of API for API Listing Page
     def display_brief(self, index):
-        print(f"{index}. EditEmployee - Updates an existing employee record.")
+        print(f"{index}. EditEmployee - Updates employee information based on first name, last name, or employee number.")
 
+    # Displays details of API and its use
     def display_details(self):
         print("\n--- EditEmployee ---")
-        print("Description: Updates details of an existing employee. Only provided fields are updated.")
+        print("Description: Updates employee information based on first name, last name, or employee number.")
         print("Parameters:")
-        print("\t- firstName (text, optional)")
-        print("\t- lastName (text, optional)")
-        print("\t- phone (text, optional)")
-        print("\t- email (text, optional)")
-        print("\t- hourlyWage (money, optional)")
-        print("\t- hireDate (date, optional)")
-        print("\t- deactivatedDate (date, optional)")
-        print("Returns: { confirmation of update, errorMessage if EmployeeNumber, firstName, or lastName not found }")
+        print("\t- first_name (optional)")
+        print("\t- last_name (optional)")
+        print("\t- employeeNumber (optional)")
+        print("\t- phone (optional)")
+        print("\t- email (optional)")
+        print("\t- hourly_wage (optional)")
+        print("\t- hire_date (optional)")
+        print("\t- deactivated_date (optional)")
+        print("\tExample: first_name = John, last_name = Doe")
         print("-------------------------\n")
+
+    # Function for executing API
+    def execute(self):
+        # Collect user input for finding the employee
+        first_name_search = input("Enter First Name to search (leave blank if not applicable): ").strip() or None
+        last_name_search = input("Enter Last Name to search (leave blank if not applicable): ").strip() or None
+        employee_number_search = input("Enter Employee Number to search (leave blank if not applicable): ").strip() or None
+
+        # Check if at least one search parameter is provided
+        if not first_name_search and not last_name_search and not employee_number_search:
+            print("Please provide at least one search parameter (first name, last name, or employee number).")
+            return
+
+        cur = self.conn.cursor() # Create a cursor object for executing SQL statements
+
+        # Find & Save the employee ID based on the provided search criteria 
+        employee_id = None
+        try:
+            if employee_number_search:
+                cur.execute("SELECT id FROM employee WHERE employeenumber = %s;", (employee_number_search,))
+            elif first_name_search and last_name_search:
+                cur.execute("SELECT id FROM employee WHERE firstname = %s AND lastname = %s;", (first_name_search, last_name_search))
+            elif first_name_search:
+                cur.execute("SELECT id FROM employee WHERE firstname = %s;", (first_name_search,))
+            elif last_name_search:
+                cur.execute("SELECT id FROM employee WHERE lastname = %s;", (last_name_search,))
+
+            result = cur.fetchone()
+            if result:
+                employee_id = result[0]
+            else:
+                print("Employee not found. Try again")
+                return
+
+        except Exception as e:
+            print(f"Error finding employee. Try Again")
+            return
+
+        print("\n-------------------------")
+
+        first_name = input("Enter First Name (leave blank to keep current): ").strip() or None
+        last_name = input("Enter Last Name (leave blank to keep current): ").strip() or None
+        phone = input("Enter Phone Number (leave blank to keep current): ").strip() or None
+        email = input("Enter Email (leave blank to keep current): ").strip() or None
+        hourly_wage = input("Enter Hourly Wage (leave blank to keep current): ").strip() or None
+        hire_date = input("Enter Hire Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
+        deactivated_date = input("Enter Deactivated Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
+
+        print("-------------------------")
+
+        # Check for quit command
+        if any(item and item.lower() == "quit" for item in [first_name, last_name, phone, email, hourly_wage, hire_date, deactivated_date]):
+            print("Operation terminated by user.")
+            return
+
+        # Update employee information
+        try:
+            cur.execute("BEGIN;") # Begin the transaction block
+            update_fields = []
+            update_values = []
+
+            if first_name:
+                update_fields.append("firstname = %s")
+                update_values.append(first_name)
+            if last_name:
+                update_fields.append("lastname = %s")
+                update_values.append(last_name)
+            if phone:
+                update_fields.append("phone = %s")
+                update_values.append(phone)
+            if email:
+                update_fields.append("email = %s")
+                update_values.append(email)
+            if hourly_wage:
+                update_fields.append("hourlywage = %s")
+                update_values.append(hourly_wage)
+            if hire_date:
+                update_fields.append("hiredate = %s")
+                update_values.append(hire_date)
+            if deactivated_date:
+                update_fields.append("deactivateddate = %s")
+                update_values.append(deactivated_date)
+
+            if update_fields:
+                update_query = "UPDATE employee SET " + ", ".join(update_fields) + " WHERE id = %s"
+                update_values.append(employee_id)
+
+                # Prepare and execute the update query
+                cur.execute("PREPARE update_employee_prepared AS " + update_query, tuple(update_values))
+                cur.execute("EXECUTE update_employee_prepared")
+                cur.execute("DEALLOCATE update_employee_prepared")
+
+                self.conn.commit() # Commit the transaction only if the entire operation succeeds
+                print("Employee information updated successfully.")
+            else:
+                print("No updates were provided.")
+
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error updating employee information. Try again.")
+
+        finally:
+            cur.close()
