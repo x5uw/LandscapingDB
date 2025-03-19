@@ -113,10 +113,10 @@ CREATE TABLE IF NOT EXISTS Employee (
 	PRIMARY KEY		(id)
 );
 
--- To create unique, sequential auto generated employee numbers (E+'9-digit-number')
+-- To create unique, sequential auto generated employee numbers (E+'4-digit-number')
 CREATE FUNCTION generate_employee_num() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.employeeNum := 'E' || LPAD(nextval('employeeNum_seq')::TEXT, 9, '0');
+    NEW.employeeNum := 'E' || LPAD(nextval('employeeNum_seq')::TEXT, 4, '0');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
