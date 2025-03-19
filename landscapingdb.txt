@@ -176,7 +176,7 @@ CREATE SEQUENCE IF NOT EXISTS service_num_seq START WITH 1 INCREMENT BY 1;
 
 CREATE TABLE IF NOT EXISTS RecurringService (
     id SERIAL PRIMARY KEY,
-    serviceNum VARCHAR(10) UNIQUE NOT NULL DEFAULT ('RS' || LPAD(nextval('service_num_seq')::TEXT, 4, '0')),
+    serviceNum VARCHAR(10) UNIQUE NOT NULL,
     name VARCHAR(50) NOT NULL,
     allocatedManHours INTERVAL NOT NULL,
     price MONEY NOT NULL,
@@ -187,23 +187,27 @@ CREATE TABLE IF NOT EXISTS RecurringService (
 );
 \qecho
 
-\qecho Creating Trigger to Auto-Generate serviceNum
--- Ensure the trigger doesn't already exist before creating it
-DO $$ 
+\qecho Creating Function to Auto-Generate serviceNum
+CREATE OR REPLACE FUNCTION generate_service_num() RETURNS TRIGGER AS $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_service_num') THEN
-        CREATE FUNCTION generate_service_num() RETURNS TRIGGER AS $$
-        BEGIN
-            IF NEW.serviceNum IS NULL THEN
-                NEW.serviceNum := 'RS' || LPAD(nextval('service_num_seq')::TEXT, 4, '0');
-            END IF;
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
+    IF NEW.serviceNum IS NULL THEN
+        NEW.serviceNum := 'RS' || LPAD(nextval('service_num_seq')::TEXT, 4, '0');
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+\qecho
 
-        CREATE TRIGGER set_service_num
-        BEFORE INSERT ON RecurringService
-        FOR EACH ROW EXECUTE FUNCTION generate_service_num();
+\qecho Creating Trigger to Auto-Generate serviceNum
+DO $$ 
+DECLARE trigger_exists INT;
+BEGIN
+    SELECT COUNT(*) INTO trigger_exists FROM pg_trigger WHERE tgname = 'set_service_num';
+    IF trigger_exists = 0 THEN
+        EXECUTE 'CREATE TRIGGER set_service_num
+                 BEFORE INSERT ON RecurringService
+                 FOR EACH ROW 
+                 EXECUTE FUNCTION generate_service_num();';
     END IF;
 END $$;
 \qecho
