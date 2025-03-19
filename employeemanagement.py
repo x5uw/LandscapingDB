@@ -23,7 +23,7 @@ class ListEmployeesAPI(APIEndpoint):
                 SELECT *
                 FROM Employee
                 WHERE ($1 IS NULL OR (CASE WHEN $1 THEN deactivateddate IS NULL ELSE deactivateddate IS NOT NULL END))
-                    AND ($2 IS NULL OR employeenum ILIKE '$2')
+                    AND ($2 IS NULL OR employeenum ILIKE $2)
                     AND ($3 IS NULL OR LOWER(firstName) = LOWER($3))
                     AND ($4 IS NULL OR LOWER(lastName) = LOWER($4));
             """)
@@ -31,12 +31,60 @@ class ListEmployeesAPI(APIEndpoint):
             self.conn.commit()  # Commit the prepare command
 
         except Exception as e:
-            self.conn.rollback()
+            self.conn.rollback() # Rollback the transaction if an error occurs
             print("Error preparing list_employees.") 
         finally:
             cur.close()
 
-    #display brief description of API for API Listing Page
+    # Function for executing API and collecting user input
+    def execute(self):
+        filter_active = input("Enter activeStatus filter (true/false or leave empty for all): ").strip().lower()
+        filter_employeeNum = input("Enter employeeNum filter (or leave empty for all): ").strip()
+        filter_firstName = input("Enter firstName filter (or leave empty for all): ").strip()
+        filter_lastName = input("Enter lastName filter (or leave empty for all): ").strip()
+        
+        
+        # Input validation: Handle formats and 'quit' command
+        if any(field.lower() == "quit" for field in [filter_active, filter_firstName, filter_lastName]):
+            print("Operation terminated by user.")
+            return  # Exit the API if "quit" is entered
+
+        if filter_active == "":
+            active_filter = None
+        elif filter_active not in {"true", "false"}:
+            print("Error: filter_active must be either 'true', 'false', or an empty string (case insensitive).")
+            active_filter = None
+        else:
+            active_filter = filter_active == "true"
+
+        employeenum_filter = filter_employeeNum if filter_employeeNum else None
+        firstName_filter = filter_firstName if filter_firstName else None
+        lastName_filter = filter_lastName if filter_lastName else None
+        cur = self.conn.cursor()
+
+        try:
+            cur.execute("EXECUTE list_employees(%s, %s, %s, %s);", (active_filter, employeenum_filter, firstName_filter, lastName_filter))
+            rows = cur.fetchall()
+            
+            #Print the results
+            print("\nemployeenum | firstname | lastname |    phone     |            email           |  hiredate  | deactivateddate | hourlywage")
+            print("------------+-----------+----------+--------------+---------------------------+------------+-----------------+------------")
+
+            for row in rows:
+                id, employeenum, firstname, lastname, phone, email, hiredate, deactivateddate, hourlywage = row
+                hiredate_str = hiredate.strftime('%Y-%m-%d') if hiredate else None
+                deactivateddate_str = deactivateddate.strftime('%Y-%m-%d') if deactivateddate else None
+
+                print(f"{employeenum:11} | {firstname:9} | {lastname:8} | {phone:12} | {email or '':26} | {hiredate_str or '':10} | {deactivateddate_str or '':15} | {hourlywage:9}")
+
+            print(f"({len(rows)} rows)")
+
+        except Exception as e:
+            print("Error executing list_employees:")
+        finally:
+            cur.close()
+    
+    # Display brief/Detail descriptions of API for API Listing Page
     def display_brief(self, index):
         print(f"{index}. ListEmployees - Lists employee records (optional filters).") 
 
@@ -51,55 +99,6 @@ class ListEmployeesAPI(APIEndpoint):
         print("Example: ativeStatus = true, firstName = , lastName = ")
         print("-------------------------\n")
 
-    # Function for executing API and collecting user input
-    def execute(self):
-        filter_active = input("Enter activeStatus filter (true/false or leave empty for all): ").strip().lower()
-        filter_employeeNum = input("Enter employeeNum filter (or leave empty for all): ").strip()
-        filter_firstName = input("Enter firstName filter (or leave empty for all): ").strip()
-        filter_lastName = input("Enter lastName filter (or leave empty for all): ").strip()
-        
-        # Input validation
-        if any(field.lower() == "quit" for field in [filter_active, filter_firstName, filter_lastName]):
-            print("Operation terminated by user.")
-            return  # Exit the API if "quit" is entered
-
-        # Convert inputs to proper types: if empty, then use None
-        filter_active_lower = filter_active.strip().lower()
-        if filter_active_lower == "":
-            active_filter = None
-        elif filter_active_lower not in {"true", "false"}:
-            print("Error: filter_active must be either 'true', 'false', or an empty string (case insensitive).")
-            active_filter = None
-        else:
-            active_filter = filter_active_lower == "true"
-
-        employeenum_filter = filter_employeeNum if filter_employeeNum else None
-        firstName_filter = filter_firstName if filter_firstName else None
-        lastName_filter = filter_lastName if filter_lastName else None
-        
-        cur = self.conn.cursor()
-
-        try:
-            cur.execute("EXECUTE list_employees(%s, %s, %s, %s);", (active_filter, employeenum_filter, firstName_filter, lastName_filter))
-            rows = cur.fetchall()
-
-            print("\nid | employeenum | firstname | lastname |    phone     |            email           |  hiredate  | deactivateddate | hourlywage")
-            print("----+-------------+-----------+----------+--------------+---------------------------+------------+-----------------+------------")
-
-            for row in rows:
-                id, employeenum, firstname, lastname, phone, email, hiredate, deactivateddate, hourlywage = row
-                hiredate_str = hiredate.strftime('%Y-%m-%d') if hiredate else None
-                deactivateddate_str = deactivateddate.strftime('%Y-%m-%d') if deactivateddate else None
-
-                print(f"{id:2} | {employeenum:11} | {firstname:9} | {lastname:8} | {phone:12} | {email or '':26} | {hiredate_str or '          '} | {deactivateddate_str or '':15} | {hourlywage:9}")
-
-            print(f"({len(rows)} rows)")
-
-        except Exception as e:
-            print("Error executing list_employees:")
-        finally:
-            cur.close()
-
 
 
 # ---------------------------
@@ -113,7 +112,7 @@ class CreateEmployeeAPI(APIEndpoint):
 
     def execute(self):
         while True:
-            print("Enter 'quit' at any time to terminate the operation.\n")
+            print("Enter 'quit' at any time to terminate the operation.")
             print("-------------------------")
             firstName = input("Enter first name: ").strip()
             lastName = input("Enter last name: ").strip()
@@ -123,13 +122,12 @@ class CreateEmployeeAPI(APIEndpoint):
             hourlyWage = input("Enter hourly wage: ").strip()
 
             print("-------------------------")
-            # Input validation
-            # Check if any field is "quit"
+            # Input validation: Handle formats and 'quit' command
             if any(field.lower() == "quit" for field in [firstName, lastName, phone, email, hireDate, hourlyWage]):
                 print("Operation terminated by user.")
                 return  # Exit the API if "quit" is entered
 
-            # Check if any field is empty
+            # Ensure all required inputs received
             if not firstName or not lastName or not phone or not email or not hireDate or not hourlyWage:
                 print("Error: All fields are required. Please re-enter the details.")
                 continue  # Re-execute the loop
@@ -145,26 +143,34 @@ class CreateEmployeeAPI(APIEndpoint):
             try:
                 cur = self.conn.cursor()
 
-                # Define the prepared statement inside the execution function
                 cur.execute("""
                     PREPARE create_employee AS
                     INSERT INTO Employee (firstName, lastName, phone, email, hireDate, hourlyWage)
                     VALUES ($1, $2, $3, $4, $5, $6)
-                    RETURNING employeeNum;
-                """)
+                    RETURNING employeeNum, firstName, lastName, phone, email, hireDate, hourlyWage;
+                """, (firstName, lastName, phone, email, hireDate, hourlyWage))
 
                 # Execute the prepared statement
                 cur.execute("EXECUTE create_employee (%s, %s, %s, %s, %s, %s);", 
                             (firstName, lastName, phone, email, hireDate, hourlyWage))
                 
-                employeeNum = cur.fetchone()[0]
+                new_employee = cur.fetchone()
                 self.conn.commit()
-                print(f"Success! Employee created with EmployeeNumber: {employeeNum}")
+                print(f"Success! Employee created")
+                # Print the results
+                print("\nemployeenum | firstname | lastname |    phone     |            email           |  hiredate  | hourlywage")
+                print("------------+-----------+----------+--------------+----------------------------+------------+------------")
+                
+                employeeNum, firstName, lastName, phone, email, hireDate, hourlyWage = new_employee
+                hireDate_str = hireDate.strftime('%Y-%m-%d') if hireDate else 'N/A'
+                
+                print(f"{employeeNum:11} | {firstName:9} | {lastName:8} | {phone:12} | {email:26} | {hireDate_str:10} | {hourlyWage:9}")
                 break
+
 
             except Exception as e:
                 self.conn.rollback()
-                print("Error creating employee:")
+                print("Error creating employee")
                 break
             finally:
                 cur.close()
@@ -217,21 +223,20 @@ class EditEmployeeAPI(APIEndpoint):
         print("\t- hourly_wage (optional)")
         print("\t- hire_date (optional)")
         print("\t- deactivated_date (optional)")
-        print("Example: new firstName = 'Jane'")
+        print("\tExample: first_name = John, last_name = Doe")
         print("-------------------------\n")
 
     # Function for executing API
     def execute(self):
         # Collect user input for finding the employee
-        print("Example: first_name = John, last_name = Doe")
+        employee_number_search = input("Enter Employee Number to search (Eg.'E1234') (leave blank if not applicable): ").strip() or None
         first_name_search = input("Enter First Name to search (leave blank if not applicable): ").strip() or None
         last_name_search = input("Enter Last Name to search (leave blank if not applicable): ").strip() or None
-        employee_number_search = input("Enter Employee Number to search (leave blank if not applicable): ").strip() or None
-        
+       
+
         # Check if at least one search parameter is provided
         if not first_name_search and not last_name_search and not employee_number_search:
             print("Please provide at least one search parameter (first name, last name, or employee number).")
-            print("Enter 'quit' at any time to terminate the operation.\n")
             return
 
         cur = self.conn.cursor() # Create a cursor object for executing SQL statements
@@ -240,7 +245,7 @@ class EditEmployeeAPI(APIEndpoint):
         employee_id = None
         try:
             if employee_number_search:
-                cur.execute("SELECT id FROM employee WHERE employeenum ILIKE %s;", (employee_number_search,))
+                cur.execute("SELECT id FROM employee WHERE employeenum iLIKE %s;", (employee_number_search,))
             elif first_name_search and last_name_search:
                 cur.execute("SELECT id FROM employee WHERE firstname = %s AND lastname = %s;", (first_name_search, last_name_search))
             elif first_name_search:
@@ -260,7 +265,7 @@ class EditEmployeeAPI(APIEndpoint):
             return
 
         print("\n-------------------------")
-        print("Enter new information for the employee (leave blank to keep current):\n")
+
         first_name = input("Enter First Name (leave blank to keep current): ").strip() or None
         last_name = input("Enter Last Name (leave blank to keep current): ").strip() or None
         phone = input("Enter Phone Number (leave blank to keep current): ").strip() or None
@@ -268,6 +273,7 @@ class EditEmployeeAPI(APIEndpoint):
         hourly_wage = input("Enter Hourly Wage (leave blank to keep current): ").strip() or None
         hire_date = input("Enter Hire Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
         deactivated_date = input("Enter Deactivated Date (YYYY-MM-DD, leave blank to keep current): ").strip() or None
+
         print("-------------------------")
 
         # Check for quit command
