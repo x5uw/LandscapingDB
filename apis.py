@@ -32,21 +32,29 @@ from propertymanagement import (
     UpdateClientPropertiesAPI, 
     )
 
-# Returns a list of API endpoint instances.
-# Each module’s API class is instantiated with the same DB connection.
-def get_all_apis(conn):    
-    return (
-        UpdateClientAPI(conn),
-        RetrieveClientAPI(conn),
-        ListClientsAPI(conn),
-        AssignRecurringService(conn),
-        UpdateService(conn),
-        GetServiceHistory(conn),  
-        ListAssignedServices(conn),
-        ListEmployeesAPI(conn),
-        CreateEmployeeAPI(conn),
-        EditEmployeeAPI(conn),
-        ListPropertiesAPI(conn),
-        UpdateClientPropertiesAPI(conn),
-        WorkSummaryAPI(conn)
-    )
+# Returns a dictionary of API groups.
+def get_all_apis(conn):
+    return {
+        "Client Management": get_client_apis(conn),
+        "Service Management": get_service_apis(conn),
+        "Employee Management": get_employee_apis(conn),
+        "Property Management": get_property_apis(conn),
+        "Financial Management": get_financial_apis(conn)
+    }
+
+# Group-specific functions returning lists of API endpoint instances.
+
+def get_client_apis(conn):
+    return [UpdateClientAPI(conn), RetrieveClientAPI(conn), ListClientsAPI(conn)]
+
+def get_service_apis(conn):
+    return [AssignRecurringService(conn), UpdateService(conn), GetServiceHistory(conn), ListAssignedServices(conn)]
+
+def get_employee_apis(conn):
+    return [ListEmployeesAPI(conn), CreateEmployeeAPI(conn), EditEmployeeAPI(conn)]
+
+def get_property_apis(conn):
+    return [ListPropertiesAPI(conn), UpdateClientPropertiesAPI(conn)]
+
+def get_financial_apis(conn):
+    return [WorkSummaryAPI(conn)]
