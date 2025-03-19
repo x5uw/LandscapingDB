@@ -176,7 +176,7 @@ class UpdateService(APIEndpoint):
         print("\t\tQ: Quarterly")
         print("\nExample Input:")
         print("serviceNum = 'RS0083', serviceName = 'Advanced Lawn Care', allocatedManHours = '02:00:00',")
-        print("price = 100.00, serviceType = 'L', orderStatus = 'A', frequencyType = 'W' (or leave blank to keep current)")
+        print("price = 100.00, serviceType = 'L', orderStatus = 'A', frequencyType = 'Q'")
         print("-------------------------\n")
 
     def execute(self):
