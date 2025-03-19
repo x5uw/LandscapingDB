@@ -1,7 +1,6 @@
 #apis.py
 
 from clientmanagement import (
-    CreateClientAPI,
     UpdateClientAPI,
     RetrieveClientAPI,
     ListClientsAPI
@@ -37,7 +36,6 @@ from propertymanagement import (
 # Each module’s API class is instantiated with the same DB connection.
 def get_all_apis(conn):    
     return (
-        CreateClientAPI(conn),
         UpdateClientAPI(conn),
         RetrieveClientAPI(conn),
         ListClientsAPI(conn),

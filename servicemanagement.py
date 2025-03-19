@@ -221,6 +221,22 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         """
         print("Retrieves full service history for a client, including date, type, duration, and cost.")
 
+    def display_details(self):
+        """ Display detailed API usage information for retrieving service history """
+        print("\n--- GetServiceHistory ---")
+        print("Retrieves full service history for a client, including date, type, duration, and cost.")
+        print("\nParameters:")
+        print("\t- accountNumber (text): The unique account number of the client.")
+        print("\t- limit (integer, optional): Max number of results per page (default: 10).")
+        print("\t- offset (integer, optional): The number of records to skip (default: 0, starts from first record).")
+        print("\tReturns:")
+        print("\t The list of service records for the given client, showing when each service was performed, the type of service, the duration, and the cost.")
+        
+
+        print("\nExample Input:")
+        print("accountNumber = 'C0001'")
+        print("-------------------------\n")
+
     def execute(self):
         """
         Executes the query to fetch a client's service history.
@@ -228,7 +244,7 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         - Queries the database to retrieve historical service records
         - Prints the service history or an error message if no records are found
         """
-        account_number = input("Enter Client Account Number: ").strip()  # Get user input
+        account_number = input("Enter Client Account Number (Example: C0001): ").strip()  # Get user input
 
         # SQL query to fetch service history for a given client account number
         query = """
@@ -263,9 +279,11 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
 # ListAssignedService API
 # Author: Kat Tran
 # ---------------------------
-class ListAssignedServices(APIEndpoint):  # List API for assigned property services
+class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned services
     """
-    This class lists all active services assigned to a specific property.
+    This class retrieves all currently assigned services for a given property.
+    - Includes service type, duration, and price
+    - Supports filtering through limit and offset
     """
 
     def __init__(self, conn):
@@ -288,33 +306,53 @@ class ListAssignedServices(APIEndpoint):  # List API for assigned property servi
         """
         Displays detailed information about what this API does.
         """
-        print("Lists all active services currently assigned to a property.")
+        print("\n--- ListAssignedServices ---")
+        print("Lists all active services currently assigned to a property, with optional filtering.")
+        print("\nParameters:")
+        print("\t- propertyNumber (text): The property number where services are assigned.")
+        print("\t- limit (integer, optional): Max number of results per page (default: 10).")
+        print("\t- offset (integer, optional): The number of records to skip (default: 0, starts from first record).")
+        print("\nReturns:")
+        print("\t- A list of active services assigned to the specified property, showing the service number, name, allocated time, and cost.")
+        print("\nExample Input:")
+        print("propertyNumber = 'P001', limit = 5, offset = 0")
+        print("-------------------------\n")
+
 
     def execute(self):
         """
         Executes the query to fetch assigned services for a property.
         - Prompts the user for the property number
-        - Queries the database for active services assigned to that property
-        - Prints the assigned services or an error message if none are found
+        - Queries the database to retrieve assigned services
+        - Supports using LIMIT and OFFSET
+        - Prints the list of services or an error message if no records are found
         """
-        property_number = input("Enter Property Number: ").strip()  # Get user input
 
-        # SQL query to fetch active services assigned to a given property number
+        # Prompt the user to enter the property number
+        property_number = input("Enter Property Number (Example: P001): ").strip()
+
+        # Prompt the user for filtering options
+        limit = input("Enter max results per page (default 10): ").strip() or "10"
+        offset = input("Enter offset (default 0, start from first result): ").strip() or "0"
+
+        # SQL query to fetch assigned services for a given property
         query = """
         SELECT rs.serviceNum, rs.name, rs.allocatedManHours, rs.price
         FROM RecurringServiceList rsl
         JOIN RecurringService rs ON rsl.recurringServiceID = rs.id
         JOIN Property p ON p.id = rsl.propertyID
-        WHERE p.propertyNumber = %s AND rsl.activeStatus = TRUE;
+        WHERE p.propertyNumber = %s AND rsl.activeStatus = TRUE
+        ORDER BY rs.name
+        LIMIT %s OFFSET %s;
         """
 
         try:
             # Open a database cursor using 'with' to ensure it's properly closed after execution
             with self.conn.cursor() as cur:
-                cur.execute(query, (property_number,))  # Execute query with provided property number
+                cur.execute(query, (property_number, limit, offset))  # Execute query with property number, limit, and offset
                 services = cur.fetchall()  # Fetch all matching records
 
-                # If no services found, print an error message
+                # If no records found, print an error message
                 if not services:
                     print("Error: No services found for this property.")
                 else:

@@ -66,7 +66,7 @@ class ListPropertiesAPI(APIEndpoint):
         print("\t- active status (true/false) or leave empty for all")
         print("\t- city name or leave empty for all (case-sensitive)")
         print("\t- client account number or leave empty for all")
-        print("\tExample: activeStatus = true, city = Seattle, account number = C0001")
+        print("\tExample: activeStatus = true, city = Seattle, account number = C0002")
         print("-------------------------\n")
 
 
