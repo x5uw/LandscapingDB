@@ -736,4 +736,6 @@ INSERT INTO Invoice (id, clientID, invoiceNumber, totalAmount, workRecordID, per
 (4, 3, 'INV0004', 35.00, 4, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G'),
 (5, 4, 'INV0005', 60.00, 5, '2025-01-01', '2025-01-31', '2025-02-05 00:00', '2025-01-31 00:00', 'G');
 
-
+-- Append sequence update
+SELECT setval('service_num_seq', (SELECT MAX(id) FROM recurringservice));
+SELECT setval(pg_get_serial_sequence('recurringservice', 'id'), (SELECT MAX(id) FROM recurringservice));

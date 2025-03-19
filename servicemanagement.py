@@ -47,10 +47,12 @@ class AssignRecurringService(APIEndpoint):
         print("\t- serviceName (text): Descriptive name of the service")
         print("\t- allocatedManHours (interval): Time allocated (e.g., '01:30:00')")
         print("\t- price (money): Cost of the service (e.g., '60.00')")
+        print("\t- frequencyType (text): Frequency of the service (e.g., 'W', 'B', 'M', 'Q')")
         print("\tReturns:")
         print("\t- The assigned service number (auto-generated)")
         print("\nExample Input:")
-        print("propertyNumber = 'P001', serviceType = 'L', serviceName = 'Premium Lawn Mowing', allocatedManHours = '01:30:00', price = 60.00")
+        print("propertyNumber = 'P001', serviceType = 'L', serviceName = 'Premium Lawn Mowing',")
+        print("allocatedManHours = '01:30:00', price = 60.00, frequencyType = 'W'")
         print("-------------------------\n")
 
     def execute(self):
@@ -60,6 +62,7 @@ class AssignRecurringService(APIEndpoint):
         service_name = input("Enter service name (e.g., Special Lawn Care): ").strip()
         allocated_man_hours = input("Enter allocated man hours (HH:MM:SS): ").strip()
         price = input("Enter price: ").strip()
+        frequency_type = input("Enter frequency type code (W for Weekly, B for Biweekly, M for Monthly, Q for Quarterly): ").strip()
 
         cur = self.conn.cursor()
         try:
@@ -71,14 +74,31 @@ class AssignRecurringService(APIEndpoint):
                 print(f"Error: Property {property_number} does not exist.")
                 return
 
-            # Execute the prepared statement
+            # Execute the prepared statement to insert into RecurringService
             cur.execute("EXECUTE assign_recurring_service(%s, %s, %s, %s, %s);", 
                         (service_type, service_name, allocated_man_hours, price, property_number))
             service_num = cur.fetchone()[0]
+
+            # Retrieve the id of the newly created service using its serviceNum
+            cur.execute("SELECT id FROM RecurringService WHERE serviceNum = %s;", (service_num,))
+            new_service_id = cur.fetchone()[0]
+
+            # Insert into RecurringServiceList to link the property with the new service.
+            cur.execute("""
+                INSERT INTO RecurringServiceList (propertyID, recurringServiceID, frequencyTypeID, activeStatus)
+                VALUES (
+                    (SELECT id FROM Property WHERE propertyNumber = %s),
+                    %s,
+                    %s,
+                    TRUE
+                );
+            """, (property_number, new_service_id, frequency_type))
+
             self.conn.commit()
             print(f"Service assigned successfully with service number: {service_num}")
         except Exception as e:
             print("Error executing assign_recurring_service:", e)
+            self.conn.rollback()
         finally:
             cur.close()
 
