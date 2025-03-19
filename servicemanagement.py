@@ -6,6 +6,10 @@ from api_endpoint import APIEndpoint
 # AssignRecurringService API
 # Author: Minh Tran
 # ---------------------------
+# ---------------------------
+# AssignRecurringService API
+# Author: Minh Tran
+# ---------------------------
 class AssignRecurringService(APIEndpoint):
     """ API to assign a new recurring service to a property """
 
@@ -34,20 +38,29 @@ class AssignRecurringService(APIEndpoint):
             cur.close()
 
     def display_brief(self, index):
-        """ Display brief API description """
+        # Display brief API description 
         print(f"{index}. AssignRecurringService - Assigns a new recurring service to a property.")
 
     def display_details(self):
-        """ Display detailed API usage information """
+        # Display detailed API usage information 
         print("\n--- AssignRecurringService ---")
         print("Assigns a new recurring service to a property with the required details.")
         print("Parameters:")
         print("\t- propertyNumber (text): The property number where the service will be assigned")
-        print("\t- serviceType (text): Service Type Code (e.g., 'L' for Lawncare)")
+        print("\t- serviceType (text): Service Type Code. Options:")
+        print("\t\tL: Lawncare")
+        print("\t\tT: Tree Trimming")
+        print("\t\tF: Flowerbed")
+        print("\t\tS: Snow Removal")
+        print("\t\tO: Other")
         print("\t- serviceName (text): Descriptive name of the service")
         print("\t- allocatedManHours (interval): Time allocated (e.g., '01:30:00')")
         print("\t- price (money): Cost of the service (e.g., '60.00')")
-        print("\t- frequencyType (text): Frequency of the service (e.g., 'W', 'B', 'M', 'Q')")
+        print("\t- frequencyType (text): Frequency of the service. Options:")
+        print("\t\tW: Weekly")
+        print("\t\tB: Biweekly")
+        print("\t\tM: Monthly")
+        print("\t\tQ: Quarterly")
         print("\tReturns:")
         print("\t- The assigned service number (auto-generated)")
         print("\nExample Input:")
@@ -56,9 +69,9 @@ class AssignRecurringService(APIEndpoint):
         print("-------------------------\n")
 
     def execute(self):
-        """ Execute the API by collecting user input """
+        # Execute the API by collecting user input
         property_number = input("Enter property number: ").strip()
-        service_type = input("Enter service type code (e.g., L, T, F, S, O): ").strip()
+        service_type = input("Enter service type code (L for Lawncare, T for Tree Trimming, F for Flowerbed, S for Snow Removal, O for Other): ").strip()
         service_name = input("Enter service name (e.g., Special Lawn Care): ").strip()
         allocated_man_hours = input("Enter allocated man hours (HH:MM:SS): ").strip()
         price = input("Enter price: ").strip()
@@ -113,7 +126,7 @@ class UpdateService(APIEndpoint):
         self.conn = conn
         cur = self.conn.cursor()
         try:
-            # Prepare SQL statement for updating a recurring service
+            # Prepare SQL statement for updating a recurring service in the RecurringService table
             cur.execute("""
                 PREPARE update_service(text, text, interval, money, text, text) AS
                 UPDATE RecurringService
@@ -142,24 +155,39 @@ class UpdateService(APIEndpoint):
         print("\n--- UpdateService ---")
         print("Description: Updates specific details of an existing recurring service.")
         print("Parameters:")
-        print("\t- serviceNum (text): Unique service number, e.g., 'RS0084'")
+        print("\t- serviceNum (text): Unique service number, e.g., 'RS0083'")
         print("\t- serviceName (text): Updated service name")
         print("\t- allocatedManHours (interval): Updated allocated hours, e.g., '02:00:00'")
         print("\t- price (money): Updated cost, e.g., 100.00")
-        print("\t- serviceType (text): Updated service type code, e.g., 'L' for Lawncare")
-        print("\t- orderStatus (text): Updated order status code, e.g., 'A' for Active")
+        print("\t- serviceType (text): Updated service type code. Options:")
+        print("\t\tL: Lawncare")
+        print("\t\tT: Tree Trimming")
+        print("\t\tF: Flowerbed")
+        print("\t\tS: Snow Removal")
+        print("\t\tO: Other")
+        print("\t- orderStatus (text): Updated order status code. Options:")
+        print("\t\tA: Active")
+        print("\t\tI: Inactive")
+        print("\t\tP: Paused")
+        print("\t- frequencyType (text): (Optional) Updated frequency type code for the service assignment. Options:")
+        print("\t\tW: Weekly")
+        print("\t\tB: Biweekly")
+        print("\t\tM: Monthly")
+        print("\t\tQ: Quarterly")
         print("\nExample Input:")
-        print("serviceNum = 'RS0084', serviceName = 'Advanced Lawn Care', allocatedManHours = '02:00:00', price = 100.00, serviceType = 'L', orderStatus = 'A'")
+        print("serviceNum = 'RS0083', serviceName = 'Advanced Lawn Care', allocatedManHours = '02:00:00',")
+        print("price = 100.00, serviceType = 'L', orderStatus = 'A', frequencyType = 'W' (or leave blank to keep current)")
         print("-------------------------\n")
 
     def execute(self):
         # Execute the API by collecting user input 
-        service_num = input("Enter service number (e.g., RS0084): ").strip()
+        service_num = input("Enter service number (e.g., RS0083): ").strip()
         service_name = input("Enter new service name (or press enter to keep current): ").strip() or None
         allocated_man_hours = input("Enter new allocated man hours (HH:MM:SS, or press enter to keep current): ").strip() or None
         price = input("Enter new price (or press enter to keep current): ").strip() or None
-        service_type = input("Enter new service type code (e.g., L, T, F, S, O, or press enter to keep current): ").strip() or None
-        order_status = input("Enter new order status code (e.g., A for Active, I for Inactive, P for Paused, or press enter to keep current): ").strip() or None
+        service_type = input("Enter new service type code (L for Lawncare, T for Tree Trimming, F for Flowerbed, S for Snow Removal, O for Other, or press enter to keep current): ").strip() or None
+        order_status = input("Enter new order status code (A for Active, I for Inactive, P for Paused, or press enter to keep current): ").strip() or None
+        frequency_type = input("Enter new frequency type code (W for Weekly, B for Biweekly, M for Monthly, Q for Quarterly, or press enter to keep current): ").strip() or None
 
         cur = self.conn.cursor()
         try:
@@ -171,10 +199,19 @@ class UpdateService(APIEndpoint):
                 print(f"Error: Service with number {service_num} does not exist.")
                 return
 
-            # Execute the prepared statement with updated details
+            # Execute the prepared statement with updated details for the RecurringService table
             cur.execute("EXECUTE update_service (%s, %s, %s, %s, %s, %s);", 
                         (service_num, service_name, allocated_man_hours, price, service_type, order_status))
             updated_service_num = cur.fetchone()[0]
+
+            # If the user provided a new frequency, update the RecurringServiceList table accordingly.
+            if frequency_type:
+                cur.execute("""
+                    UPDATE RecurringServiceList
+                    SET frequencyTypeID = %s
+                    WHERE recurringServiceID = (SELECT id FROM RecurringService WHERE serviceNum = %s);
+                """, (frequency_type, service_num))
+
             self.conn.commit()
 
             if updated_service_num:
@@ -183,6 +220,7 @@ class UpdateService(APIEndpoint):
                 print("Failed to update service. Please check service number and inputs.")
         except Exception as e:
             print("Error executing update_service:", e)
+            self.conn.rollback()
         finally:
             cur.close()
 
