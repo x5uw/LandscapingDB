@@ -23,9 +23,9 @@ from employeemanagement import (
     EditEmployeeAPI
 )
 
-#from financialmanagement import (
-#
-#)
+from financialmanagement import (
+    WorkSummaryAPI
+)
 
 from propertymanagement import (
     ListPropertiesAPI, 
@@ -47,5 +47,6 @@ def get_all_apis(conn):
         CreateEmployeeAPI(conn),
         EditEmployeeAPI(conn),
         ListPropertiesAPI(conn),
-        UpdateClientPropertiesAPI(conn), 
+        UpdateClientPropertiesAPI(conn),
+        WorkSummaryAPI(conn)
     )

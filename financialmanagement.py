@@ -71,7 +71,7 @@ class WorkSummaryAPI(APIEndpoint):
         print("Parameters:")
         print("\t- Start Date (timestamp, format: YYYY-MM-DD)")
         print("\t- End Date (timestamp, format: YYYY-MM-DD)")
-        print("Example: Start Date = '2025-01-05', End Date = '2025-01-23 09:30'")
+        print("Example: Start Date = '2025-01-05', End Date = '2025-01-23'")
         print("-------------------------\n")
 
 
