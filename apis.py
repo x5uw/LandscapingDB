@@ -9,7 +9,9 @@ from clientmanagement import (
 
 from servicemanagement import (
     AssignRecurringService,
-    UpdateService
+    UpdateService,
+    GetServiceHistory,       
+    ListAssignedServices
     )
 
 #from workrecordmanagement import (
@@ -35,15 +37,17 @@ from propertymanagement import (
 # Each module’s API class is instantiated with the same DB connection.
 def get_all_apis(conn):    
     return (
-        ListPropertiesAPI(conn),
-        UpdateClientPropertiesAPI(conn),
-        AssignRecurringService(conn),
-        UpdateService(conn),
-        ListEmployeesAPI(conn),
-        CreateEmployeeAPI(conn),
-        EditEmployeeAPI(conn), 
         CreateClientAPI(conn),
         UpdateClientAPI(conn),
         RetrieveClientAPI(conn),
-        ListClientsAPI(conn)
+        ListClientsAPI(conn),
+        AssignRecurringService(conn),
+        UpdateService(conn),
+        GetServiceHistory(conn),  
+        ListAssignedServices(conn),
+        ListEmployeesAPI(conn),
+        CreateEmployeeAPI(conn),
+        EditEmployeeAPI(conn),
+        ListPropertiesAPI(conn),
+        UpdateClientPropertiesAPI(conn), 
     )

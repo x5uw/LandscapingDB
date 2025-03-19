@@ -165,3 +165,142 @@ class UpdateService(APIEndpoint):
             print("Error executing update_service:", e)
         finally:
             cur.close()
+
+# ---------------------------
+# GetServiceHistory API
+# Author: Kat Tran
+# ---------------------------
+class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client service history
+    """
+    This class retrieves a client's full service history, including:
+    - Service start and end times
+    - Type of service performed
+    - Duration of the service
+    - Cost of the service
+    """
+
+    def __init__(self, conn):
+        """
+        Initializes the class with a database connection.
+        
+        :param conn: Database connection object
+        """
+        self.conn = conn
+
+    def display_brief(self, index: int):
+        """
+        Displays a brief description of this API's functionality.
+        
+        :param index: Index of the API in a list of available APIs
+        """
+        print(f"{index}. Retrieve service history for a client.")
+
+    def display_details(self):
+        """
+        Displays detailed information about what this API does.
+        """
+        print("Retrieves full service history for a client, including date, type, duration, and cost.")
+
+    def execute(self):
+        """
+        Executes the query to fetch a client's service history.
+        - Prompts the user for the client’s account number
+        - Queries the database to retrieve historical service records
+        - Prints the service history or an error message if no records are found
+        """
+        account_number = input("Enter Client Account Number: ").strip()  # Get user input
+
+        # SQL query to fetch service history for a given client account number
+        query = """
+        SELECT wr.startTime, wr.endTime, rs.name AS serviceType, rs.allocatedManHours, rs.price
+        FROM WorkRecord wr
+        JOIN RecurringService rs ON wr.recurringServiceID = rs.id
+        JOIN Property p ON p.id = (
+            SELECT propertyID FROM RecurringServiceList WHERE recurringServiceID = wr.recurringServiceID
+        )
+        JOIN Client c ON c.id = p.clientID
+        WHERE c.accountNumber = %s;
+        """
+
+        try:
+            # Open a database cursor using 'with' to ensure it's properly closed after execution
+            with self.conn.cursor() as cur:
+                cur.execute(query, (account_number,))  # Execute query with provided account number
+                records = cur.fetchall()  # Fetch all matching records
+
+                # If no records found, print an error message
+                if not records:
+                    print("Error: Client not found or no service history available.")
+                else:
+                    print("\nService History:")
+                    for row in records:
+                        print(f"Start Time: {row[0]}, End Time: {row[1]}, Service: {row[2]}, Duration: {row[3]}, Cost: {row[4]}")
+
+        except psycopg2.Error as e:
+            print(f"Database error: {e}")  # Print database error details
+
+# ---------------------------
+# ListAssignedService API
+# Author: Kat Tran
+# ---------------------------
+class ListAssignedServices(APIEndpoint):  # List API for assigned property services
+    """
+    This class lists all active services assigned to a specific property.
+    """
+
+    def __init__(self, conn):
+        """
+        Initializes the class with a database connection.
+        
+        :param conn: Database connection object
+        """
+        self.conn = conn
+
+    def display_brief(self, index: int):
+        """
+        Displays a brief description of this API's functionality.
+        
+        :param index: Index of the API in a list of available APIs
+        """
+        print(f"{index}. List all services assigned to a property.")
+
+    def display_details(self):
+        """
+        Displays detailed information about what this API does.
+        """
+        print("Lists all active services currently assigned to a property.")
+
+    def execute(self):
+        """
+        Executes the query to fetch assigned services for a property.
+        - Prompts the user for the property number
+        - Queries the database for active services assigned to that property
+        - Prints the assigned services or an error message if none are found
+        """
+        property_number = input("Enter Property Number: ").strip()  # Get user input
+
+        # SQL query to fetch active services assigned to a given property number
+        query = """
+        SELECT rs.serviceNum, rs.name, rs.allocatedManHours, rs.price
+        FROM RecurringServiceList rsl
+        JOIN RecurringService rs ON rsl.recurringServiceID = rs.id
+        JOIN Property p ON p.id = rsl.propertyID
+        WHERE p.propertyNumber = %s AND rsl.activeStatus = TRUE;
+        """
+
+        try:
+            # Open a database cursor using 'with' to ensure it's properly closed after execution
+            with self.conn.cursor() as cur:
+                cur.execute(query, (property_number,))  # Execute query with provided property number
+                services = cur.fetchall()  # Fetch all matching records
+
+                # If no services found, print an error message
+                if not services:
+                    print("Error: No services found for this property.")
+                else:
+                    print("\nAssigned Services:")
+                    for row in services:
+                        print(f"Service Number: {row[0]}, Service: {row[1]}, Duration: {row[2]}, Cost: {row[3]}")
+
+        except psycopg2.Error as e:
+            print(f"Database error: {e}")  # Print database error details
