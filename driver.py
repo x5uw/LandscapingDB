@@ -4,6 +4,8 @@ import psycopg2                 # Import the PostgreSQL adapter library for Pyth
 from apis import get_all_apis   # Import the function that retrieves all API objects grouped by category
 from config import DB_CONFIG    # Import the database configuration dictionary
 
+
+
 # Function to connect to the PostgreSQL database
 # It uses the connection settings specified in config.py
 # Returns a connection object if successful, otherwise returns None
@@ -14,6 +16,8 @@ def connect_to_db():
     except psycopg2.Error as e: # Print an error message if the connection attempt fails
         print("Error connecting to database:", e)
         return None  # Return None to indicate that the connection was not successful
+
+
 
 # The main function that acts as the entry point for the CLI program
 def main():
@@ -26,7 +30,7 @@ def main():
     # Retrieve a dictionary of API endpoint groups from apis.py
     apis_by_group = get_all_apis(dbConnection)
     
-    # Define the group order as desired.
+    # Define the group order as desired for display
     group_order = [
         "Client Management",
         "Service Management",
@@ -35,22 +39,25 @@ def main():
         "Financial Management"
     ]
     
-    # Build a sequential list of all API objects for later selection.
+    # Build a sequential list of all API objects for later selection
     all_apis = []
     
     # Start an infinite loop to continuously prompt the user for input until they choose to exit
     while True:
         print("\n\n===== Available APIs =====\n")
-        counter = 1  # Initialize sequential numbering.
-        # Iterate through groups in the defined order.
+        counter = 1  # Initialize sequential numbering
+        
+        # Iterate through groups in the defined order
         for group in group_order:
             print(f"--{group}--")
+            
             for api in apis_by_group[group]:
-                # Display a brief summary for each API.
+                # Display a brief summary for each API
                 api.display_brief(counter)
                 all_apis.append(api)
                 counter += 1
-            print("")  # Blank line after each group.
+            print("")  # Blank line after each group
+        
         print("--EXIT PROGRAM--")
         print("0. Exit")
         
@@ -73,11 +80,14 @@ def main():
                 all_apis[choice - 1].execute() 
             else: # Inform the user if the number is out of the valid range
                 print("Invalid selection. Please try again.")
+        
         # Catch the exception if the input could not be converted to an integer
         except ValueError:
             print("Invalid input. Please enter a number.")
 
     dbConnection.close() # After the user chooses to exit, close the database connection
+
+
 
 # This conditional ensures that the main function is only executed when the script
 # is run directly, and not when it is imported as a module in another script
