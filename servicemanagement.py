@@ -6,10 +6,6 @@ from api_endpoint import APIEndpoint
 # AssignRecurringService API
 # Author: Minh Tran
 # ---------------------------
-# ---------------------------
-# AssignRecurringService API
-# Author: Minh Tran
-# ---------------------------
 class AssignRecurringService(APIEndpoint):
     """ API to assign a new recurring service to a property """
 
