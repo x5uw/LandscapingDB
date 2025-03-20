@@ -106,6 +106,13 @@ The `driver.py` file is the main entry point:
 
 Follow the on-screen instructions to select and execute an API.
 
+## Diagrams
+
+### Sequence Diagram: Driver Startup and API Execution
+![Sequence Diagram](SequenceDiagramLandscapingDB.png)
+
+### Class Diagram
+![Class Diagram](ClassDiagramLandscapingDB.png)
 
 
 
