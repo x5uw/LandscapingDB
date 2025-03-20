@@ -403,5 +403,5 @@ class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned ser
         
         except Exception as e:
             # Print a error message if a database error occurs
-            print("An error occurred while retrieving service history.")
+             print("An error occurred while retrieving assigned services.")
 
