@@ -239,7 +239,7 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         
         :param conn: Database connection object
         """
-        self.conn = conn
+        self.conn = conn  # Store the database connection object for executing queries
 
     def display_brief(self, index: int):
         """
@@ -253,20 +253,13 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         """
         Displays detailed information about what this API does.
         """
-        print("Retrieves full service history for a client, including date, type, duration, and cost.")
-
-    def display_details(self):
-        """ Display detailed API usage information for retrieving service history """
         print("\n--- GetServiceHistory ---")
         print("Retrieves full service history for a client, including date, type, duration, and cost.")
         print("\nParameters:")
         print("\t- accountNumber (text): The unique account number of the client.")
-        print("\t- limit (integer, optional): Max number of results per page (default: 10).")
-        print("\t- offset (integer, optional): The number of records to skip (default: 0, starts from first record).")
         print("\tReturns:")
         print("\t The list of service records for the given client, showing when each service was performed, the type of service, the duration, and the cost.")
         
-
         print("\nExample Input:")
         print("accountNumber = 'C0001'")
         print("-------------------------\n")
@@ -278,36 +271,45 @@ class GetServiceHistory(APIEndpoint):  # Detail API for retrieving client servic
         - Queries the database to retrieve historical service records
         - Prints the service history or an error message if no records are found
         """
-        account_number = input("Enter Client Account Number (Example: C0001): ").strip()  # Get user input
+        
+        # Prompt the user to enter the client's unique account number
+        account_number = input("Enter Client Account Number (Example: C0001): ").strip()
 
         # SQL query to fetch service history for a given client account number
+        # Join with RecurringService to get service details
+        # Join with Client table to match the account number
         query = """
         SELECT wr.startTime, wr.endTime, rs.name AS serviceType, rs.allocatedManHours, rs.price
         FROM WorkRecord wr
-        JOIN RecurringService rs ON wr.recurringServiceID = rs.id
-        JOIN Property p ON p.id = (
-            SELECT propertyID FROM RecurringServiceList WHERE recurringServiceID = wr.recurringServiceID
-        )
-        JOIN Client c ON c.id = p.clientID
+            JOIN RecurringService rs ON wr.recurringServiceID = rs.id  
+            JOIN Property p ON p.id = (
+                SELECT propertyID FROM RecurringServiceList WHERE recurringServiceID = wr.recurringServiceID
+            )  
+            JOIN Client c ON c.id = p.clientID 
         WHERE c.accountNumber = %s;
         """
 
         try:
             # Open a database cursor using 'with' to ensure it's properly closed after execution
             with self.conn.cursor() as cur:
-                cur.execute(query, (account_number,))  # Execute query with provided account number
-                records = cur.fetchall()  # Fetch all matching records
-
+                # Execute the SQL query safely using parameterized queries to prevent SQL injection
+                cur.execute(query, (account_number,))
+                
+                # Fetch all matching service history records
+                records = cur.fetchall()
+                
                 # If no records found, print an error message
                 if not records:
                     print("Error: Client not found or no service history available.")
                 else:
+                    # Display the retrieved service history in a readable format
                     print("\nService History:")
                     for row in records:
-                        print(f"Start Time: {row[0]}, End Time: {row[1]}, Service: {row[2]}, Duration: {row[3]}, Cost: {row[4]}")
-
-        except psycopg2.Error as e:
-            print(f"Database error: {e}")  # Print database error details
+                        print(f"Start Time: {row[0]}, End Time: {row[1]}, Service: {row[2]}, Duration: {row[3]} hours, Cost: ${row[4]}")
+        
+        except Exception as e:
+            # Print a error message if a database error occurs
+            print("An error occurred while retrieving service history.")
 
 # ---------------------------
 # ListAssignedService API
@@ -326,7 +328,7 @@ class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned ser
         
         :param conn: Database connection object
         """
-        self.conn = conn
+        self.conn = conn  # Store the database connection object for executing queries
 
     def display_brief(self, index: int):
         """
@@ -352,7 +354,6 @@ class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned ser
         print("propertyNumber = 'P001', limit = 5, offset = 0")
         print("-------------------------\n")
 
-
     def execute(self):
         """
         Executes the query to fetch assigned services for a property.
@@ -362,19 +363,21 @@ class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned ser
         - Prints the list of services or an error message if no records are found
         """
 
-        # Prompt the user to enter the property number
+        # Prompt the user to enter the property number (identifier for the property)
         property_number = input("Enter Property Number (Example: P001): ").strip()
 
-        # Prompt the user for filtering options
-        limit = input("Enter max results per page (default 10): ").strip() or "10"
-        offset = input("Enter offset (default 0, start from first result): ").strip() or "0"
+        # Prompt the user for filtering options (limit and offset for pagination)
+        limit = input("Enter max results per page (default 10): ").strip() or "10"  
+        # Default value is 10
+        offset = input("Enter offset (default 0, start from first result): ").strip() or "0"  
+        # Default value is 0
 
         # SQL query to fetch assigned services for a given property
         query = """
         SELECT rs.serviceNum, rs.name, rs.allocatedManHours, rs.price
         FROM RecurringServiceList rsl
-        JOIN RecurringService rs ON rsl.recurringServiceID = rs.id
-        JOIN Property p ON p.id = rsl.propertyID
+            JOIN RecurringService rs ON rsl.recurringServiceID = rs.id
+            JOIN Property p ON p.id = rsl.propertyID
         WHERE p.propertyNumber = %s AND rsl.activeStatus = TRUE
         ORDER BY rs.name
         LIMIT %s OFFSET %s;
@@ -383,16 +386,22 @@ class ListAssignedServices(APIEndpoint):  # List API for retrieving assigned ser
         try:
             # Open a database cursor using 'with' to ensure it's properly closed after execution
             with self.conn.cursor() as cur:
-                cur.execute(query, (property_number, limit, offset))  # Execute query with property number, limit, and offset
-                services = cur.fetchall()  # Fetch all matching records
-
-                # If no records found, print an error message
+                # Execute the SQL query with the provided inputs (ensuring safe parameterized query execution)
+                cur.execute(query, (property_number, limit, offset))
+                
+                # Fetch all matching records from the database
+                services = cur.fetchall()
+                
+                # If no records are found, display an error message
                 if not services:
                     print("Error: No services found for this property.")
                 else:
+                    # Display the retrieved services in a user-friendly format
                     print("\nAssigned Services:")
                     for row in services:
-                        print(f"Service Number: {row[0]}, Service: {row[1]}, Duration: {row[2]}, Cost: {row[3]}")
+                        print(f"Service Number: {row[0]}, Service: {row[1]}, Duration: {row[2]} hours, Cost: ${row[3]}")
+        
+        except Exception as e:
+            # Print a error message if a database error occurs
+            print("An error occurred while retrieving service history.")
 
-        except psycopg2.Error as e:
-            print(f"Database error: {e}")  # Print database error details
