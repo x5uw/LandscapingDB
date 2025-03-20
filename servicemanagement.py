@@ -138,7 +138,7 @@ class UpdateService(APIEndpoint):
             self.conn.commit()
         except Exception as e:
             self.conn.rollback()
-            print("Error preparing update_service:", e)
+            print("Error preparing update_service.")
         finally:
             cur.close()
 
@@ -215,7 +215,7 @@ class UpdateService(APIEndpoint):
             else:
                 print("Failed to update service. Please check service number and inputs.")
         except Exception as e:
-            print("Error executing update_service:", e)
+            print("Error executing update_service.")
             self.conn.rollback()
         finally:
             cur.close()
